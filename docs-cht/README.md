@@ -23,6 +23,9 @@
 - [配置系統](./10-配置系統.md) - 配置結構、驗證、環境變數
 - [API 參考](./11-API參考.md) - Gateway RPC、Plugin SDK
 
+### 實戰指南
+- [從零開始設定實作](./12-從零開始設定實作.md) - 完整工作流程設定（Claude Code + Discord + Gmail + GitHub）
+
 ## 快速開始
 
 ```bash
