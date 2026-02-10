@@ -287,31 +287,33 @@ const sandbox: SandboxOptions = {
 
 | 提供者 | 模型 |
 |--------|------|
-| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus |
-| OpenAI | GPT-4o, GPT-4 Turbo |
-| Ollama | Llama 3, Mistral, Qwen |
+| Anthropic | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 |
+| OpenAI | GPT-4o, GPT-5.2 |
+| Ollama | Llama 3.3, Qwen 2.5, DeepSeek R1 等 |
 | OpenRouter | 多種模型 |
+| Together AI | Llama、DeepSeek、Kimi 等開源模型 |
 | Bedrock | Claude (AWS) |
 | Qwen | 通義千問 |
+| xAI | Grok |
+| MiniMax | MiniMax Portal（OAuth 認證） |
 
 ### 模型配置
 
 ```json5
 {
-  "models": {
-    "default": "claude-sonnet",
-    "entries": {
-      "claude-sonnet": {
-        "provider": "anthropic",
-        "model": "claude-3-5-sonnet-latest"
+  agents: {
+    defaults: {
+      model: {
+        primary: "anthropic/claude-sonnet-4-5",
+        fallbacks: [
+          "anthropic/claude-opus-4-5",
+          "ollama/qwen2.5-coder:32b"
+        ]
       },
-      "gpt-4o": {
-        "provider": "openai",
-        "model": "gpt-4o"
-      },
-      "local-llama": {
-        "provider": "ollama",
-        "model": "llama3.2"
+      models: {
+        "anthropic/claude-opus-4-5": { alias: "Opus" },
+        "anthropic/claude-sonnet-4-5": { alias: "Sonnet" },
+        "together/zai-org/GLM-4.7": { alias: "GLM" }
       }
     }
   }
@@ -407,7 +409,11 @@ async function compactSession(session: Session, options: CompactOptions) {
 }
 ```
 
-## 多 Agent 支援
+## 多 Agent 支援（子代理）
+
+### 子代理概覽
+
+Moltbot 支援完整的子代理系統，允許 Agent 生成並管理其他 Agent 來並行處理任務。
 
 ### Agent 之間通訊
 
@@ -440,6 +446,51 @@ const subagentTool: Tool = {
    │
    └──▶ 子 Agent C (寫作專家)
            └── 執行文件任務
+```
+
+### 子代理管理命令
+
+```bash
+# 列出所有子代理
+/subagents list
+
+# 停止子代理
+/subagents stop <id>
+
+# 查看子代理日誌
+/subagents log <id>
+
+# 查看子代理資訊
+/subagents info <id>
+
+# 向子代理發送訊息
+/subagents send <id> <message>
+```
+
+### 子代理配置
+
+```json5
+{
+  agents: {
+    defaults: {
+      tools: {
+        subagents: {
+          // 跨代理生成（允許其他 Agent 啟動子代理）
+          allowAgents: ["main", "code-expert"],
+          
+          // 自動歸檔（分鐘）
+          archiveAfterMinutes: 60,
+          
+          // 子代理工具策略
+          tools: {
+            allow: ["read", "write", "exec"],
+            deny: ["browser"]
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 ## 開發指南

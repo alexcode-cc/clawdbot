@@ -693,6 +693,60 @@ type RpcHandler = (context: {
 }) => Promise<void>;
 ```
 
+## 子代理 API (subagents.*)（v2026.2.9 新增）
+
+### subagents.list
+
+列出所有子代理。
+
+```typescript
+{
+  id: 'sub-1',
+  method: 'subagents.list'
+}
+```
+
+### subagents.stop
+
+停止指定子代理。
+
+```typescript
+{
+  id: 'sub-2',
+  method: 'subagents.stop',
+  params: { agentId: 'subagent-123' }
+}
+```
+
+### subagents.send
+
+向子代理發送訊息。
+
+```typescript
+{
+  id: 'sub-3',
+  method: 'subagents.send',
+  params: {
+    agentId: 'subagent-123',
+    message: 'Update status'
+  }
+}
+```
+
+## 設備配對 API (device.*)（v2026.2.9 新增）
+
+### device.pair.list
+
+列出待配對的設備。
+
+### device.pair.approve
+
+批准設備配對請求。
+
+### device.pair.reject
+
+拒絕設備配對請求。
+
 ## 錯誤碼
 
 | 錯誤碼 | 說明 |
