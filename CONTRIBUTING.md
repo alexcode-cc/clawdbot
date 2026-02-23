@@ -5,12 +5,47 @@ Welcome to the lobster tank! 🦞
 ## Quick Links
 
 - **GitHub:** https://github.com/openclaw/openclaw
+- **Vision:** [`VISION.md`](VISION.md)
 - **Discord:** https://discord.gg/qkhbAGHRBT
 - **X/Twitter:** [@steipete](https://x.com/steipete) / [@openclaw](https://x.com/openclaw)
 
-## Contributors
+## Maintainers
 
-See [Credits & Maintainers](https://docs.openclaw.ai/reference/credits) for the full list.
+- **Peter Steinberger** - Benevolent Dictator
+  - GitHub: [@steipete](https://github.com/steipete) · X: [@steipete](https://x.com/steipete)
+
+- **Shadow** - Discord subsystem, Discord admin, Clawhub, all community moderation
+  - GitHub: [@thewilloftheshadow](https://github.com/thewilloftheshadow) · X: [@4shad0wed](https://x.com/4shad0wed)
+
+- **Vignesh** - Memory (QMD), formal modeling, TUI, IRC, and Lobster
+  - GitHub: [@vignesh07](https://github.com/vignesh07) · X: [@\_vgnsh](https://x.com/_vgnsh)
+
+- **Jos** - Telegram, API, Nix mode
+  - GitHub: [@joshp123](https://github.com/joshp123) · X: [@jjpcodes](https://x.com/jjpcodes)
+
+- **Ayaan Zaidi** - Telegram subsystem, iOS app
+  - GitHub: [@obviyus](https://github.com/obviyus) · X: [@0bviyus](https://x.com/0bviyus)
+
+- **Tyler Yust** - Agents/subagents, cron, BlueBubbles, macOS app
+  - GitHub: [@tyler6204](https://github.com/tyler6204) · X: [@tyleryust](https://x.com/tyleryust)
+
+- **Mariano Belinky** - iOS app, Security
+  - GitHub: [@mbelinky](https://github.com/mbelinky) · X: [@belimad](https://x.com/belimad)
+
+- **Vincent Koc** - Agents, Telemetry, Hooks, Security
+  - GitHub: [@vincentkoc](https://github.com/vincentkoc) · X: [@vincent_koc](https://x.com/vincent_koc)
+
+- **Seb Slight** - Docs, Agent Reliability, Runtime Hardening
+  - GitHub: [@sebslight](https://github.com/sebslight) · X: [@sebslig](https://x.com/sebslig)
+
+- **Christoph Nakazawa** - JS Infra
+  - GitHub: [@cpojer](https://github.com/cpojer) · X: [@cnakazawa](https://x.com/cnakazawa)
+
+- **Gustavo Madeira Santana** - Multi-agents, CLI, web UI
+  - GitHub: [@gumadeiras](https://github.com/gumadeiras) · X: [@gumadeiras](https://x.com/gumadeiras)
+
+- **Onur Solmaz** - Agents, dev workflows, ACP integrations, MS Teams
+  - GitHub: [@onutc](https://github.com/onutc), [@osolmaz](https://github.com/osolmaz) · X: [@onusoz](https://x.com/onusoz)
 
 ## How to Contribute
 
@@ -23,7 +58,7 @@ See [Credits & Maintainers](https://docs.openclaw.ai/reference/credits) for the 
 - Test locally with your OpenClaw instance
 - Run tests: `pnpm build && pnpm check && pnpm test`
 - Ensure CI checks pass
-- Keep PRs focused (one thing per PR)
+- Keep PRs focused (one thing per PR; do not mix unrelated concerns)
 - Describe what & why
 
 ## Control UI Decorators
@@ -64,6 +99,26 @@ We are currently prioritizing:
 - **Performance**: Optimizing token usage and compaction logic.
 
 Check the [GitHub Issues](https://github.com/openclaw/openclaw/issues) for "good first issue" labels!
+
+## Maintainers
+
+We're selectively expanding the maintainer team.
+If you're an experienced contributor who wants to help shape OpenClaw's direction — whether through code, docs, or community — we'd like to hear from you.
+
+Being a maintainer is a responsibility, not an honorary title. We expect active, consistent involvement — triaging issues, reviewing PRs, and helping move the project forward.
+
+Still interested? Email contributing@openclaw.ai with:
+
+- Links to your PRs on OpenClaw (if you don't have any, start there first)
+- Links to open source projects you maintain or actively contribute to
+- Your GitHub, Discord, and X/Twitter handles
+- A brief intro: background, experience, and areas of interest
+- Languages you speak and where you're based
+- How much time you can realistically commit
+
+We welcome people across all skill sets — engineering, documentation, community management, and more.
+We review every human-only-written application carefully and add maintainers slowly and deliberately.
+Please allow a few weeks for a response.
 
 ## Report a Vulnerability
 
