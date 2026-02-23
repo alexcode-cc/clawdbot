@@ -2,12 +2,12 @@
 
 ## 概述
 
-Moltbot CLI 基於 Commander.js 建構，採用分層註冊和懶加載機制，確保快速啟動和模組化管理。
+OpenClaw CLI 基於 Commander.js 建構，採用分層註冊和懶加載機制，確保快速啟動和模組化管理。
 
 ## 入口流程
 
 ```
-moltbot.mjs (shebang 入口)
+openclaw.mjs (shebang 入口)
     │
     ▼
 src/entry.ts
@@ -18,7 +18,7 @@ src/entry.ts
 src/cli/run-main.ts (runCli)
     │
     ▼
-src/cli/program/build-program.ts (buildProgram)
+src/cli/program.ts (buildProgram)
     │ 建構 Commander.js 程式
     │ 註冊命令
     ▼
@@ -68,15 +68,18 @@ src/cli/program/build-program.ts (buildProgram)
 | `directory` | 目錄操作 |
 | `security` | 安全設定 |
 | `skills` | 技能管理 |
-| `update` | 更新檢查 |
+| `update` | 更新檢查（支援 `--dry-run`） |
 | `memory` | 記憶系統 |
+| `acp` | ACP 協議 |
+| `completion` | Shell 自動完成 |
+| `qr` | QR 碼工具 |
 
 ## 命令註冊機制
 
 ### 命令註冊表
 
 ```typescript
-// src/cli/program/command-registry.ts
+// src/cli/program.ts
 export interface CommandRegistration {
   name: string;
   aliases?: string[];
@@ -105,7 +108,7 @@ export const commandRegistry: CommandRegistration[] = [
 ### 懶加載機制
 
 ```typescript
-// src/cli/program/register.subclis.ts
+// 懶加載子命令
 export const lazySubClis: LazySubCliEntry[] = [
   { name: 'gateway', register: registerGatewaySubCli },
   { name: 'models', register: registerModelsSubCli },
@@ -113,18 +116,12 @@ export const lazySubClis: LazySubCliEntry[] = [
 ];
 
 function registerLazyCommand(program: Command, entry: LazySubCliEntry) {
-  // 建立佔位命令
   const placeholder = program.command(entry.name);
   placeholder.description(`${entry.name} commands (lazy loaded)`);
   
   placeholder.action(async (...args) => {
-    // 移除佔位命令
     removeCommand(program, placeholder);
-    
-    // 載入完整子命令
     await entry.register(program);
-    
-    // 重新解析參數
     await program.parseAsync(process.argv);
   });
 }
@@ -136,112 +133,135 @@ function registerLazyCommand(program: Command, entry: LazySubCliEntry) {
 
 ```bash
 # 互動式設定
-moltbot setup
+openclaw setup
 
 # 設定特定頻道
-moltbot setup --channel telegram
+openclaw setup --channel telegram
 
 # 快速設定模式
-moltbot setup --quick
+openclaw setup --quick
 ```
 
 ### config - 配置管理
 
 ```bash
 # 查看所有配置
-moltbot config list
+openclaw config list
 
-# 取得特定配置
-moltbot config get models.default
+# 取得特定配置（敏感值自動脫敏）
+openclaw config get models.default
 
 # 設定配置值
-moltbot config set models.default claude-sonnet
+openclaw config set models.default claude-sonnet
 
 # 編輯配置檔
-moltbot config edit
+openclaw config edit
 ```
 
 ### agent - Agent 執行
 
 ```bash
 # 執行 Agent（互動模式）
-moltbot agent
+openclaw agent
 
 # 發送單一訊息
-moltbot agent --message "Hello"
+openclaw agent --message "Hello"
 
 # 指定 Agent
-moltbot agent --agent custom-agent
+openclaw agent --agent custom-agent
+
+# 指定思考等級
+openclaw agent --message "Hello" --thinking low
 
 # RPC 模式
-moltbot agent --mode rpc --json
+openclaw agent --mode rpc --json
 ```
 
 ### message - 訊息操作
 
 ```bash
 # 發送訊息
-moltbot message send --channel telegram --chat 123456 "Hello"
+openclaw message send --channel telegram --chat 123456 "Hello"
 
 # 讀取訊息
-moltbot message read --channel whatsapp --chat +1234567890
+openclaw message read --channel whatsapp --chat +1234567890
 
 # 編輯訊息
-moltbot message edit --channel discord --id 987654 "Updated"
+openclaw message edit --channel discord --id 987654 "Updated"
 
 # 刪除訊息
-moltbot message delete --channel slack --id 123
+openclaw message delete --channel slack --id 123
 ```
 
 ### gateway - Gateway 管理
 
 ```bash
 # 啟動 Gateway
-moltbot gateway run
+openclaw gateway run
 
 # 指定埠號和綁定
-moltbot gateway run --port 18789 --bind lan
+openclaw gateway run --port 18789 --bind lan
 
 # 強制啟動（忽略已執行的實例）
-moltbot gateway run --force
+openclaw gateway run --force
 
 # 查看狀態
-moltbot gateway status
+openclaw gateway status
 
 # 停止 Gateway
-moltbot gateway stop
+openclaw gateway stop
 ```
 
 ### channels - 頻道管理
 
 ```bash
 # 查看頻道狀態
-moltbot channels status
+openclaw channels status
 
 # 深度探測
-moltbot channels status --deep
+openclaw channels status --deep
+
+# 全部頻道狀態（只讀/可貼上）
+openclaw channels status --all
 
 # 連接頻道
-moltbot channels connect telegram
+openclaw channels connect telegram
 
 # 斷開頻道
-moltbot channels disconnect whatsapp
+openclaw channels disconnect whatsapp
 ```
 
 ### plugins - 插件管理
 
 ```bash
 # 列出已安裝插件
-moltbot plugins list
+openclaw plugins list
 
 # 安裝插件
-moltbot plugins install matrix
+openclaw plugins install matrix
 
 # 移除插件
-moltbot plugins remove msteams
+openclaw plugins remove msteams
 
 # 更新插件
-moltbot plugins update
+openclaw plugins update
+```
+
+### update - 更新管理
+
+```bash
+# 檢查更新
+openclaw update
+
+# 預演模式（不實際更新）
+openclaw update --dry-run
+```
+
+### doctor - 診斷
+
+```bash
+# 完整診斷
+openclaw doctor
 ```
 
 ## 選項和旗標
@@ -271,7 +291,7 @@ moltbot plugins update
 ### 新增核心命令
 
 ```typescript
-// src/cli/program/register.my-command.ts
+// src/cli/my-command-cli.ts
 import { Command } from 'commander';
 
 export function registerMyCommand(program: Command) {
@@ -283,48 +303,11 @@ export function registerMyCommand(program: Command) {
       console.log(`Hello, ${options.name || 'World'}!`);
     });
 }
-
-// 在 command-registry.ts 中註冊
-export const commandRegistry: CommandRegistration[] = [
-  // ...
-  {
-    name: 'my-command',
-    description: 'My custom command',
-    register: registerMyCommand,
-  },
-];
-```
-
-### 新增子命令
-
-```typescript
-// src/cli/program/register.subclis.ts
-export const lazySubClis: LazySubCliEntry[] = [
-  // ...
-  { name: 'my-subcli', register: registerMySubCli },
-];
-
-// src/cli/program/register.my-subcli.ts
-export async function registerMySubCli(program: Command) {
-  const subcli = program
-    .command('my-subcli')
-    .description('My sub-commands');
-    
-  subcli
-    .command('action1')
-    .description('First action')
-    .action(async () => { /* ... */ });
-    
-  subcli
-    .command('action2')
-    .description('Second action')
-    .action(async () => { /* ... */ });
-}
 ```
 
 ## 進度顯示
 
-CLI 使用統一的進度顯示工具：
+CLI 使用統一的進度顯示工具（`src/cli/progress.ts`），基於 `osc-progress` 和 `@clack/prompts` spinner：
 
 ```typescript
 import { createSpinner } from 'src/cli/progress';
@@ -340,6 +323,10 @@ try {
   throw error;
 }
 ```
+
+## 終端 UI
+
+CLI 使用共享的色彩調色盤（`src/terminal/palette.ts`），適用於 onboarding/config 提示和其他 TTY UI 輸出。狀態輸出使用 `src/terminal/table.ts` 提供 ANSI 安全的表格包裝。
 
 ## 測試命令
 

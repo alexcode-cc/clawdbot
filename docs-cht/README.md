@@ -1,6 +1,6 @@
-# Moltbot 專案技術文件（繁體中文）
+# OpenClaw 專案技術文件（繁體中文）
 
-本目錄包含 Moltbot 專案的完整技術分析文件，以繁體中文撰寫，幫助開發者快速理解並繼續開發此專案。
+本目錄包含 OpenClaw 專案的完整技術分析文件，以繁體中文撰寫，幫助開發者快速理解並繼續開發此專案。
 
 ## 文件索引
 
@@ -33,7 +33,7 @@
 pnpm install
 
 # 開發模式執行 CLI
-pnpm moltbot --help
+pnpm openclaw --help
 
 # 建置專案
 pnpm build
@@ -41,15 +41,15 @@ pnpm build
 # 執行測試
 pnpm test
 
-# 格式化與 lint
-pnpm lint
+# 格式化與 lint 檢查
+pnpm check
 pnpm format
 ```
 
 ## 專案結構
 
 ```
-moltbot/
+openclaw/
 ├── src/                 # TypeScript 原始碼
 │   ├── cli/             # CLI 入口與命令註冊
 │   ├── commands/        # 命令實作
@@ -57,26 +57,40 @@ moltbot/
 │   ├── gateway/         # Gateway 伺服器
 │   ├── config/          # 配置載入與驗證
 │   ├── channels/        # 通訊頻道共用邏輯
+│   ├── routing/         # 訊息路由
 │   ├── telegram/        # Telegram 頻道
 │   ├── discord/         # Discord 頻道
 │   ├── slack/           # Slack 頻道
 │   ├── signal/          # Signal 頻道
 │   ├── imessage/        # iMessage 頻道
 │   ├── web/             # WhatsApp (Baileys) 頻道
+│   ├── line/            # LINE 頻道
+│   ├── acp/             # ACP 協議
+│   ├── browser/         # 瀏覽器控制
+│   ├── tui/             # 終端 UI (TUI)
+│   ├── process/         # 進程管理與監督
+│   ├── media/           # 媒體處理
+│   ├── memory/          # 記憶系統
+│   ├── cron/            # 排程任務
+│   ├── plugins/         # 插件系統
+│   ├── plugin-sdk/      # 插件開發 SDK
 │   └── infra/           # 基礎設施
-├── extensions/          # 擴充套件（插件）
+├── extensions/          # 擴充套件（插件，37 個）
 ├── apps/                # 原生應用程式
 │   ├── ios/             # iOS 應用 (Swift)
 │   ├── android/         # Android 應用 (Kotlin)
 │   └── macos/           # macOS 應用 (Swift)
+├── packages/            # 內部套件
 ├── docs/                # 英文文件 (Mintlify)
 ├── docs-cht/            # 繁體中文技術文件
-├── test/                # E2E 測試
-└── ui/                  # Web UI (Lit)
+├── ui/                  # Web UI (Lit)
+├── vendor/              # 第三方供應商程式碼
+├── scripts/             # 建置與工具腳本
+└── test/                # E2E 測試
 ```
 
 ## 相關連結
 
-- [GitHub 儲存庫](https://github.com/moltbot/moltbot)
-- [官方文件](https://docs.molt.bot)
+- [GitHub 儲存庫](https://github.com/openclaw/openclaw)
+- [官方文件](https://docs.openclaw.ai)
 - [Discord 社群](https://discord.gg/qkhbAGHRBT)

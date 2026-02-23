@@ -2,7 +2,7 @@
 
 ## 概述
 
-Gateway 是 Moltbot 的核心伺服器元件，提供 WebSocket 即時通訊、RPC 方法處理、會話管理等功能。所有客戶端（Web UI、行動應用、CLI）都透過 Gateway 與系統互動。
+Gateway 是 OpenClaw 的核心伺服器元件，提供 WebSocket 即時通訊、RPC 方法處理、會話管理等功能。所有客戶端（Web UI、行動應用、CLI）都透過 Gateway 與系統互動。
 
 ## 架構
 
@@ -190,63 +190,12 @@ Client                              Gateway
 ```typescript
 // src/gateway/server-runtime-state.ts
 export interface GatewayRuntimeState {
-  // WebSocket 連接
   wsConnections: Map<string, WebSocket>;
-  
-  // 聊天會話狀態
   chatRunState: Map<string, ChatRunState>;
-  
-  // 訊息緩衝
   chatRunBuffers: Map<string, ChatRunBuffer>;
-  
-  // 中止控制器
   chatAbortControllers: Map<string, AbortController>;
-  
-  // 已註冊節點
   nodes: Map<string, NodeRegistration>;
-  
-  // 插件狀態
   pluginState: Map<string, unknown>;
-}
-
-export function createGatewayRuntimeState(): GatewayRuntimeState {
-  return {
-    wsConnections: new Map(),
-    chatRunState: new Map(),
-    chatRunBuffers: new Map(),
-    chatAbortControllers: new Map(),
-    nodes: new Map(),
-    pluginState: new Map(),
-  };
-}
-```
-
-## 事件廣播
-
-```typescript
-// 廣播給所有客戶端
-function broadcast(
-  state: GatewayRuntimeState,
-  event: RpcEvent,
-  filter?: (ws: WebSocket) => boolean
-) {
-  for (const [id, ws] of state.wsConnections) {
-    if (!filter || filter(ws)) {
-      ws.send(JSON.stringify(event));
-    }
-  }
-}
-
-// 廣播給特定會話
-function broadcastToSession(
-  state: GatewayRuntimeState,
-  sessionKey: string,
-  event: RpcEvent
-) {
-  broadcast(state, event, (ws) => {
-    const meta = getConnectionMeta(ws);
-    return meta?.sessionKey === sessionKey;
-  });
 }
 ```
 
@@ -276,43 +225,16 @@ function broadcastToSession(
 
 ```typescript
 interface NodeCapabilities {
-  camera?: boolean;       // 相機
-  screenshot?: boolean;   // 螢幕截圖
-  location?: boolean;     // 位置
-  microphone?: boolean;   // 麥克風
-  tts?: boolean;          // 文字轉語音
-  sms?: boolean;          // 簡訊（Android）
+  camera?: boolean;
+  screenshot?: boolean;
+  location?: boolean;
+  microphone?: boolean;
+  tts?: boolean;
+  sms?: boolean;  // Android
 }
-
-interface NodeCommands {
-  [name: string]: {
-    description: string;
-    parameters: JSONSchema;
-  };
-}
-```
-
-### 節點呼叫流程
-
-```
-Gateway                           Node (iOS/Android)
-   │                                   │
-   │──── node.invoke.request ─────────▶│
-   │     { command: "camera.capture",  │
-   │       params: { ... } }           │
-   │                                   │
-   │                              執行命令
-   │                                   │
-   │◀─── node.invoke.result ───────────│
-   │     { success: true,              │
-   │       result: { imageUrl: "..." } │
-   │     }                             │
-   │                                   │
 ```
 
 ## HTTP 端點
-
-除了 WebSocket，Gateway 也提供 HTTP API：
 
 | 端點 | 方法 | 說明 |
 |------|------|------|
@@ -326,11 +248,11 @@ Gateway                           Node (iOS/Android)
 ```typescript
 interface GatewayServerOptions {
   port: number;               // 埠號（預設 18789）
-  bind: 'loopback' | 'lan' | string;  // 綁定位址
-  token?: string;             // 認證 Token
-  allowUnconfigured?: boolean; // 允許未配置狀態
-  tlsCert?: string;           // TLS 憑證
-  tlsKey?: string;            // TLS 私鑰
+  bind: 'loopback' | 'lan' | string;
+  token?: string;
+  allowUnconfigured?: boolean;
+  tlsCert?: string;
+  tlsKey?: string;
 }
 ```
 
@@ -338,22 +260,46 @@ interface GatewayServerOptions {
 
 ```bash
 # 基本啟動
-moltbot gateway run
+openclaw gateway run
 
 # 指定埠號和綁定
-moltbot gateway run --port 18789 --bind lan
+openclaw gateway run --port 18789 --bind lan
 
 # 強制啟動
-moltbot gateway run --force
+openclaw gateway run --force
 
 # 允許未配置
-moltbot gateway run --allow-unconfigured
+openclaw gateway run --allow-unconfigured
+```
+
+## Cron 排程
+
+Gateway 內建 Cron 排程系統，支援定時任務：
+
+```json5
+{
+  cron: {
+    enabled: true,
+    sessionRetention: "24h",
+    jobs: [
+      {
+        id: "daily-summary",
+        schedule: "0 9 * * *",
+        agent: "main",
+        message: "每日摘要",
+        channel: "discord",
+        to: "user:USER_ID"
+      }
+    ]
+  }
+}
 ```
 
 ## 安全考量
 
 1. **Token 認證**: 客戶端需提供有效 Token
-2. **設備身份**: 支援設備簽名驗證
+2. **設備身份**: 支援設備簽名驗證（v2 簽名，已移除舊版 v1）
 3. **TLS 加密**: 生產環境建議使用 WSS
 4. **CORS 設定**: 控制跨域存取
 5. **速率限制**: 防止濫用
+6. **Sanitize**: 最終回覆清理不受信任的包裝標記
