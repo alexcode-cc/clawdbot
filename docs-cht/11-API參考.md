@@ -275,6 +275,18 @@ Gateway 提供內建 HTTP 健康檢查端點，適用於 Docker/Kubernetes：
 
 拒絕設備配對請求。
 
+## Hooks 事件 API
+
+### 訊息生命週期 Hooks
+
+| 事件 | 說明 |
+|------|------|
+| `message:transcribed` | 音頻轉錄完成後觸發 |
+| `message:preprocessed` | 訊息前處理完成後觸發 |
+| `message:sent` | 訊息發送後觸發（新增 `isGroup`、`groupId` 欄位） |
+| `before_tool_call` | 工具執行前（包含 `sessionId`、`sessionKey`、`agentId`） |
+| `after_tool_call` | 工具執行後（每次工具執行觸發一次） |
+
 ## Plugin SDK API
 
 ### OpenClawPluginApi
@@ -288,10 +300,24 @@ interface OpenClawPluginApi {
   registerChannel(opts: ChannelRegistration): void;
   registerTool(tool: ToolDefinition, opts?: ToolOptions): void;
   registerGatewayMethod(name: string, handler: RpcHandler): void;
-  registerHttpHandler(handler: HttpHandler): void;
+  /** @deprecated 已移除。請改用 registerHttpRoute */
+  // registerHttpHandler(handler: HttpHandler): void;
+  registerHttpRoute(opts: {
+    path: string;
+    auth: 'plugin' | 'none';
+    match: 'exact' | 'prefix';
+    handler: HttpHandler;
+  }): void;
   registerCli(registrar: CliRegistrar, opts?: CliOptions): void;
   registerService(service: ServiceDefinition): void;
   registerProvider(provider: ProviderDefinition): void;
+}
+
+interface PluginRuntime {
+  stt: {
+    /** 透過 OpenClaw 配置的媒體理解提供者轉錄本地音頻檔案 */
+    transcribeAudioFile(filePath: string, opts?: SttOptions): Promise<string>;
+  };
 }
 ```
 
