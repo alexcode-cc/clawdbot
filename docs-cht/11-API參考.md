@@ -187,7 +187,7 @@ interface RpcEvent {
   success: true,
   result: {
     status: 'healthy',
-    version: '2026.2.22',
+    version: '2026.3.2',
     uptime: 3600,
     memory: { used: 128000000, total: 512000000 }
   }
@@ -237,6 +237,29 @@ interface RpcEvent {
 ### subagents.send
 
 向子代理發送訊息。
+
+## HTTP 健康檢查端點
+
+Gateway 提供內建 HTTP 健康檢查端點，適用於 Docker/Kubernetes：
+
+| 端點 | 方法 | 類型 | 說明 |
+|------|------|------|------|
+| `/health` | GET/HEAD | Liveness | 存活探針 |
+| `/healthz` | GET/HEAD | Liveness | 存活探針（K8s 慣例） |
+| `/ready` | GET/HEAD | Readiness | 就緒探針 |
+| `/readyz` | GET/HEAD | Readiness | 就緒探針（K8s 慣例） |
+
+不需認證。其他 HTTP 方法回傳 `405`。若已有處理器佔用該路徑，則不會被遮蔽。
+
+## Secrets API (secrets.*)
+
+### secrets.reload
+
+重新載入執行時 secrets。
+
+### secrets.audit
+
+審計 secrets 使用情況。
 
 ## 設備配對 API (device.*)
 
