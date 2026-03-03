@@ -24,7 +24,11 @@
 - [API 參考](./11-API參考.md) - Gateway RPC、Plugin SDK
 
 ### 實戰指南
-- [從零開始設定實作](./12-從零開始設定實作.md) - 完整工作流程設定（Claude Code + Discord + Gmail + GitHub）
+- [從零開始設定實作](./12-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
+
+## 版本
+
+目前版本：`2026.3.2`
 
 ## 快速開始
 
@@ -71,11 +75,14 @@ openclaw/
 │   ├── process/         # 進程管理與監督
 │   ├── media/           # 媒體處理
 │   ├── memory/          # 記憶系統
+│   ├── secrets/         # Secrets 管理
 │   ├── cron/            # 排程任務
 │   ├── plugins/         # 插件系統
 │   ├── plugin-sdk/      # 插件開發 SDK
+│   ├── providers/       # LLM 提供者
+│   ├── shared/          # 共用輔助函式
 │   └── infra/           # 基礎設施
-├── extensions/          # 擴充套件（插件，37 個）
+├── extensions/          # 擴充套件（插件）
 ├── apps/                # 原生應用程式
 │   ├── ios/             # iOS 應用 (Swift)
 │   ├── android/         # Android 應用 (Kotlin)
