@@ -169,6 +169,10 @@ Agent 工作區支援以下特殊檔案：
 | `canvas` | Canvas A2UI |
 | `cron` | 排程任務 |
 | `sessions` | 會話管理 |
+| `diffs` | 差異渲染（before/after 或 unified patch） |
+| `agents_list` | 代理清單 |
+| `message` | 訊息發送 |
+| `gateway` | Gateway 操作 |
 
 ### 工具配置檔
 
@@ -223,18 +227,18 @@ const sandbox: SandboxOptions = {
 
 | 提供者 | 模型 |
 |--------|------|
-| Anthropic | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 |
-| OpenAI | GPT-4o, GPT-5.2 |
-| Mistral | Mistral 模型（新增） |
+| Anthropic | Claude 4.6（預設 adaptive thinking）、Claude Opus/Sonnet/Haiku 4.5 |
+| OpenAI | GPT-4o, GPT-5.2（預設 WebSocket 串流） |
+| Mistral | Mistral 模型 |
 | Ollama | Llama 3.3, Qwen 2.5, DeepSeek R1 等 |
 | OpenRouter | 多種模型 |
 | Together AI | Llama、DeepSeek、Kimi 等開源模型 |
-| Bedrock | Claude (AWS) |
+| Bedrock | Claude (AWS)（包含 Bedrock Claude 4.6 refs） |
 | Qwen | 通義千問 |
 | xAI | Grok |
 | MiniMax | MiniMax Portal（OAuth 認證） |
 | Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth） |
-| Copilot | Copilot Proxy |
+| Copilot | Copilot Proxy（支援 token 過期自動重新整理） |
 
 ### 模型配置
 
@@ -321,16 +325,39 @@ interface Session {
 - 只計算已完成的自動壓縮次數
 - 忽略超大檢查中的工具結果細節
 - 對齊壓縮下限指引
+- OpenAI Responses 支援伺服器端 compaction（`context_management`，per-model opt-out/threshold 覆寫）
 
 ### 會話儲存
 
 會話日誌儲存在 `~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl`。
 
+## Thinking 模式
+
+### Claude 4.6 自適應思考
+
+Claude 4.6 模型（包含 Bedrock Claude 4.6 refs）預設使用 `adaptive` 思考等級。其他支援推理的模型預設為 `low`。
+
+```json5
+{
+  agents: {
+    defaults: {
+      thinking: "adaptive"  // adaptive | low | off
+    }
+  }
+}
+```
+
+當提供者不支援指定的 thinking level 時，系統會自動降級為 `think=off` 以避免硬失敗。
+
+### OpenAI WebSocket 串流
+
+OpenAI Responses API 預設使用 WebSocket 串流（`transport: "auto"`，SSE 降級），並支援可選的 WebSocket 預熱（`openaiWsWarmup`）。
+
 ## 多 Agent 支援（子代理）
 
 ### 子代理概覽
 
-OpenClaw 支援完整的子代理系統，允許 Agent 生成並管理其他 Agent 來並行處理任務。
+OpenClaw 支援完整的子代理系統，允許 Agent 生成並管理其他 Agent 來並行處理任務。子代理完成事件使用結構化 `task_completion` 內部事件，統一直接和佇列通知路徑。
 
 ### 子代理管理命令
 
@@ -392,3 +419,15 @@ const myTool: Tool = {
 - 頂層 schema 必須是 `type: "object"` 搭配 `properties`
 - 使用 `Type.Optional(...)` 而非 `... | null`
 - 避免使用 `format` 作為屬性名稱（部分驗證器視為保留字）
+
+## 模型失敗降級
+
+Agent 系統支援多層降級策略：
+- **網路錯誤降級**: `ECONNREFUSED`、`ENETUNREACH`、`EHOSTUNREACH`、`ENETRESET`、`EAI_AGAIN` 觸發 fallback
+- **速率限制分類**: 精確匹配 TPM 作為獨立 token/片語，避免子字串誤判
+- **認證過期重試**: Copilot token 過期後自動刷新並重新執行
+- **Thinking 降級**: 不支援的 thinking level 自動降級為 `off`
+
+## Shell 環境標記
+
+所有 shell-like 執行環境（`exec`、`acp`、`acp-client`、`tui-local`）會注入 `OPENCLAW_SHELL` 環境變數，讓 shell startup/config 規則可以識別 OpenClaw 執行上下文。
