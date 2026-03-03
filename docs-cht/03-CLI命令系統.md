@@ -160,6 +160,12 @@ openclaw config edit
 
 # 顯示目前使用的配置檔路徑
 openclaw config file
+
+# 驗證配置（Gateway 啟動前使用）
+openclaw config validate
+
+# 驗證配置（機器可讀 JSON 輸出）
+openclaw config validate --json
 ```
 
 ### agent - Agent 執行
