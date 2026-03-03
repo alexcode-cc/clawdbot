@@ -19,9 +19,10 @@
 - [第一步：安裝 OpenClaw](#第一步安裝-openclaw)
 - [第二步：AI 模型設定](#第二步ai-模型設定)
   - [選項 A：使用本地 Ollama（Mac Mini 本機）](#選項-a使用本地-ollamaMac-Mini-本機)
-  - [選項 B：使用 LM Studio（推薦的本地替代方案）](#選項-b使用-lm-studio推薦的本地替代方案)
-  - [選項 C：使用 Claude Code 訂閱](#選項-c使用-claude-code-訂閱)
-  - [混合模式：本地 + 雲端（推薦）](#混合模式本地--雲端推薦)
+  - [選項 B：使用遠端 Mac Mini M4 24GB 作為 AI 引擎（推薦）](#選項-b使用遠端-mac-mini-m4-24gb-作為-ai-引擎推薦)
+  - [選項 C：使用 LM Studio（本地替代方案）](#選項-c使用-lm-studio本地替代方案)
+  - [選項 D：使用 Claude Code 訂閱](#選項-d使用-claude-code-訂閱)
+  - [混合模式：遠端 Ollama + 本地 + 雲端（最佳方案）](#混合模式遠端-ollama--本地--雲端最佳方案)
 - [第三步：Discord 機器人設定](#第三步discord-機器人設定)
 - [第四步：Gmail 自動收發設定](#第四步gmail-自動收發設定)
 - [第五步：GitHub 自動上傳設定](#第五步github-自動上傳設定)
@@ -42,10 +43,10 @@ Mac Mini M4 配備 16 GB 統一記憶體（CPU/GPU 共享），對本地 LLM 運
 |------|------|
 | 可用 GPU 記憶體 | 約 10-12 GB（扣除系統與應用程式佔用） |
 | 適合的模型大小 | 7B-14B 參數（Q4/Q5 量化） |
-| 不建議的模型 | 32B 以上模型（會導致記憶體交換，嚴重降速） |
-| 推薦策略 | **混合模式**：本地小模型處理簡單任務 + 雲端大模型處理複雜任務 |
+| 不建議的本機模型 | 32B 以上模型（會導致記憶體交換，嚴重降速） |
+| 推薦策略 | **遠端 + 本地混合模式**：遠端 24GB 大模型 + 本地小模型 + 雲端備援 |
 
-> **重要提示**：OpenClaw 官方建議本地模型需要至少 24 GB GPU 記憶體才能有良好體驗。16 GB 的 Mac Mini 只能運行較小的模型，且延遲較高。強烈建議搭配雲端模型作為 fallback，使用 `models.mode: "merge"` 保持混合模式。
+> **重要提示**：OpenClaw 官方建議本地模型需要至少 24 GB GPU 記憶體才能有良好體驗。16 GB 的 Mac Mini 只能在本機運行較小的模型（7B-14B），且延遲較高。**推薦方案**：搭配一台 Mac Mini M4 24GB 作為遠端 Ollama 伺服器，透過區域網路存取 32B 大模型（詳見[選項 B](#選項-b使用遠端-mac-mini-m4-24gb-作為-ai-引擎推薦)），同時使用 `models.mode: "merge"` 保持雲端備援。
 
 ### 效能最佳化建議
 
@@ -279,27 +280,7 @@ openclaw config set models.providers.ollama.apiKey '"ollama-local"' --json
 > - 若使用 OpenAI 相容端點，則設定 `baseUrl` 為 `http://127.0.0.1:11434/v1`，`api` 設為 `"openai-completions"`。
 > - 若不預先定義 `models` 陣列，OpenClaw 會在啟動時自動從 Ollama 探索可用模型。
 
-#### A.4 使用遠端 Ollama 伺服器（選用）
-
-若有另一台高效能機器運行 Ollama（例如桌機配備獨立 GPU），可指向遠端：
-
-```json5
-{
-  models: {
-    providers: {
-      ollama: {
-        baseUrl: "http://192.168.168.168:11434",
-        apiKey: "ollama-local",
-        api: "ollama",
-        // models 留空讓 OpenClaw 自動探索遠端模型
-        models: []
-      }
-    }
-  }
-}
-```
-
-#### A.5 驗證 Ollama 設定
+#### A.4 驗證本地 Ollama 設定
 
 ```bash
 # 列出所有已配置的模型
@@ -311,15 +292,336 @@ openclaw models status
 
 ---
 
-### 選項 B：使用 LM Studio（推薦的本地替代方案）
+### 選項 B：使用遠端 Mac Mini M4 24GB 作為 AI 引擎（推薦）
 
-LM Studio 提供圖形化介面管理本地模型，並內建 OpenAI 相容 API 伺服器，是 Mac 上推薦的本地模型方案。
+若你有另一台 **Mac Mini M4 24GB**（或其他高效能機器），可以將它作為專用 AI 推理伺服器，讓 16GB 的 Mac Mini 透過區域網路存取 32B 級別的大模型。這是 16GB 機器獲得高品質 AI 能力的最佳方案。
 
-#### B.1 安裝 LM Studio
+#### 架構概覽
+
+```
+┌─────────────────────┐         區域網路          ┌─────────────────────────┐
+│  Mac Mini M4 16GB   │  ◄──── HTTP API ────►  │  Mac Mini M4 24GB       │
+│  (OpenClaw Gateway) │      192.168.x.x:11434  │  (Ollama AI 伺服器)     │
+│                     │                          │                         │
+│  ● OpenClaw Gateway │                          │  ● Ollama 服務          │
+│  ● Discord Bot      │                          │  ● qwen2.5-coder:32b   │
+│  ● Gmail Webhook    │                          │  ● deepseek-r1:32b     │
+│  ● 本地 7B 模型     │                          │  ● llama3.3            │
+│    (快速簡單任務)    │                          │  ● llama3.2:3b         │
+└─────────────────────┘                          └─────────────────────────┘
+```
+
+> **優勢**：
+> - 16GB 機器專注運行 OpenClaw Gateway 和服務，記憶體不被大模型佔用
+> - 24GB 機器專注 AI 推理，可全力運行 32B 模型
+> - 兩台機器各司其職，整體效能優於單台
+> - 本地仍保留 7B 小模型作為快速回應和離線備援
+
+#### B.1 遠端伺服器設定（Mac Mini M4 24GB 端）
+
+在 24GB 的 Mac Mini 上完成以下設定：
+
+##### 安裝並啟動 Ollama
+
+```bash
+# 安裝 Ollama
+brew install ollama
+
+# 下載推薦的 32B 級別模型
+ollama pull qwen2.5-coder:32b    # 主力編碼模型
+ollama pull deepseek-r1:32b      # 主力推理模型
+ollama pull llama3.3              # 快速對話模型
+ollama pull llama3.2:3b           # 極速輕量模型
+ollama pull qwen2.5-coder:14b    # 14B 編碼備援
+
+# 驗證模型
+ollama list
+```
+
+##### 設定 Ollama 監聽區域網路
+
+Ollama 預設只監聽 `127.0.0.1`（本機），需要設定為監聽區域網路 IP：
+
+```bash
+# 方法一：使用環境變數（推薦）
+# 將以下內容加入 ~/.zprofile（永久生效）
+cat >> ~/.zprofile <<'EOF'
+
+# Ollama 伺服器設定
+export OLLAMA_HOST=0.0.0.0:11434      # 監聽所有網路介面
+export OLLAMA_MAX_LOADED_MODELS=1     # 同時載入模型數（32B 建議 1）
+export OLLAMA_KEEP_ALIVE=30m          # 模型保留在記憶體的時間
+export OLLAMA_NUM_PARALLEL=2          # 並行推理請求數
+EOF
+source ~/.zprofile
+
+# 方法二：使用 launchd plist（macOS 服務方式）
+# 若 Ollama 透過 macOS 應用程式運行，需要修改 plist：
+# 編輯 ~/Library/LaunchAgents/com.ollama.ollama.plist
+# 加入環境變數 OLLAMA_HOST=0.0.0.0:11434
+
+# 重啟 Ollama 服務
+pkill ollama
+ollama serve &
+```
+
+> **安全提示**：`OLLAMA_HOST=0.0.0.0` 會讓 Ollama 在所有網路介面上監聽。若你的區域網路不受信任，建議：
+> - 改用具體 IP：`OLLAMA_HOST=192.168.x.x:11434`（只監聽區域網路 IP）
+> - 使用防火牆限制存取來源
+> - 或使用 Tailscale 建立安全的點對點連線
+
+##### 確認遠端 IP 並驗證
+
+```bash
+# 查看 24GB Mac Mini 的區域網路 IP
+ipconfig getifaddr en0
+# 記下輸出的 IP，例如 192.168.1.100
+
+# 在 24GB Mac Mini 本機驗證 Ollama 正在監聽
+curl http://127.0.0.1:11434/api/tags
+
+# 查看 Ollama 監聽狀態
+lsof -i :11434
+```
+
+##### 效能優化（24GB 遠端伺服器）
+
+```bash
+# 加入 ~/.zprofile
+cat >> ~/.zprofile <<'EOF'
+
+# Node.js 效能優化（若同時運行其他服務）
+export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
+mkdir -p /var/tmp/openclaw-compile-cache
+EOF
+source ~/.zprofile
+```
+
+#### B.2 本地端設定（Mac Mini M4 16GB 端）
+
+##### 驗證網路連通性
+
+```bash
+# 將 REMOTE_IP 替換為 24GB Mac Mini 的實際 IP
+REMOTE_IP=192.168.1.100
+
+# 測試網路連通
+ping -c 3 $REMOTE_IP
+
+# 測試 Ollama API 可達
+curl http://$REMOTE_IP:11434/api/tags
+
+# 查看遠端可用的模型列表
+curl http://$REMOTE_IP:11434/api/tags | python3 -m json.tool
+```
+
+##### 設定 OpenClaw 指向遠端 Ollama
+
+使用 CLI 快速設定：
+
+```bash
+# 設定遠端 Ollama（將 192.168.1.100 替換為實際 IP）
+openclaw config set models.providers.ollama-remote.baseUrl '"http://192.168.1.100:11434"' --json
+openclaw config set models.providers.ollama-remote.apiKey '"ollama-remote"' --json
+openclaw config set models.providers.ollama-remote.api '"ollama"' --json
+```
+
+或者手動編輯 `~/.openclaw/openclaw.json`（推薦，更精確控制）：
+
+```json5
+{
+  models: {
+    mode: "merge",  // 合併本地、遠端和雲端模型
+    providers: {
+      // 遠端 24GB Mac Mini 上的 Ollama（大模型）
+      "ollama-remote": {
+        baseUrl: "http://192.168.1.100:11434",  // 替換為實際 IP
+        apiKey: "ollama-remote",
+        api: "ollama",
+        models: [
+          {
+            id: "qwen2.5-coder:32b",
+            name: "Qwen 2.5 Coder 32B (Remote)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 32768,
+            maxTokens: 32768
+          },
+          {
+            id: "deepseek-r1:32b",
+            name: "DeepSeek R1 32B (Remote)",
+            reasoning: true,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 32768,
+            maxTokens: 32768
+          },
+          {
+            id: "qwen2.5-coder:14b",
+            name: "Qwen 2.5 Coder 14B (Remote)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 16384,
+            maxTokens: 16384
+          },
+          {
+            id: "llama3.3",
+            name: "Llama 3.3 (Remote)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 8192
+          }
+        ]
+      },
+      // 本機 16GB 上的 Ollama（輕量模型，快速回應 + 離線備援）
+      ollama: {
+        baseUrl: "http://127.0.0.1:11434",
+        apiKey: "ollama-local",
+        api: "ollama",
+        models: [
+          {
+            id: "llama3.3",
+            name: "Llama 3.3 (Local)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 8192
+          },
+          {
+            id: "llama3.2:3b",
+            name: "Llama 3.2 3B (Local)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 8192
+          },
+          {
+            id: "qwen2.5-coder:7b",
+            name: "Qwen 2.5 Coder 7B (Local)",
+            reasoning: false,
+            input: ["text"],
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+            contextWindow: 8192,
+            maxTokens: 8192
+          }
+        ]
+      }
+    }
+  },
+  agents: {
+    defaults: {
+      model: {
+        // 遠端 32B 為主力，本地 7B 為備援
+        primary: "ollama-remote/qwen2.5-coder:32b",
+        fallbacks: [
+          "ollama-remote/deepseek-r1:32b",
+          "ollama-remote/llama3.3",
+          "ollama/qwen2.5-coder:7b",   // 本地備援（遠端不可達時）
+          "ollama/llama3.3"             // 本地備援
+        ]
+      }
+    }
+  }
+}
+```
+
+> **提供者命名說明**：
+> - `ollama-remote` — 遠端 24GB Mac Mini 上的 Ollama 實例
+> - `ollama` — 本機 16GB Mac Mini 上的 Ollama 實例
+> - 兩者可同時配置，OpenClaw 會分別連線到各自的 `baseUrl`
+> - 模型引用格式為 `<provider-id>/<model-id>`（如 `ollama-remote/qwen2.5-coder:32b`）
+
+#### B.3 使用 Tailscale 建立安全連線（選用但建議）
+
+若兩台 Mac Mini 不在同一個可信賴的區域網路，建議使用 Tailscale 建立加密的點對點連線：
+
+```bash
+# 兩台 Mac Mini 都需要安裝並登入 Tailscale
+brew install --cask tailscale
+# 在兩台機器上分別登入同一個 Tailscale 帳號
+
+# 查看 Tailscale IP
+tailscale ip -4
+# 例如：100.64.0.2（24GB Mac Mini 的 Tailscale IP）
+
+# 使用 Tailscale IP 設定 Ollama（更安全）
+# 在 24GB Mac Mini 上設定 Ollama 監聽 Tailscale 介面
+export OLLAMA_HOST=0.0.0.0:11434
+
+# 在 16GB Mac Mini 上使用 Tailscale IP 連線
+# baseUrl: "http://100.64.0.2:11434"
+```
+
+#### B.4 驗證遠端連線
+
+```bash
+# 從 16GB Mac Mini 測試遠端 Ollama
+curl http://192.168.1.100:11434/api/tags
+
+# 測試推理是否正常
+curl http://192.168.1.100:11434/api/generate -d '{
+  "model": "qwen2.5-coder:32b",
+  "prompt": "Hello, write a simple Python function.",
+  "stream": false
+}'
+
+# 查看遠端目前載入的模型
+curl http://192.168.1.100:11434/api/ps
+
+# 驗證 OpenClaw 可以看到遠端模型
+openclaw models list
+openclaw models status
+```
+
+#### B.5 網路斷線備援策略
+
+遠端伺服器可能因網路問題不可達。OpenClaw 的 fallback 機制會自動切換到本地模型：
+
+```json5
+{
+  agents: {
+    defaults: {
+      model: {
+        primary: "ollama-remote/qwen2.5-coder:32b",  // 遠端 32B 優先
+        fallbacks: [
+          "ollama-remote/qwen2.5-coder:14b",          // 遠端 14B 備援
+          "ollama/qwen2.5-coder:7b",                   // 本地 7B（網路斷線時）
+          "ollama/llama3.3",                            // 本地 8B
+          "anthropic/claude-sonnet-4-6"                 // 雲端最終備援
+        ]
+      }
+    }
+  }
+}
+```
+
+確保本機 16GB Mac Mini 也安裝並運行 Ollama，下載輕量級備援模型：
+
+```bash
+# 在 16GB Mac Mini 本機安裝備援模型
+brew install ollama
+ollama pull llama3.3             # 8B 通用
+ollama pull llama3.2:3b          # 3B 極速
+ollama pull qwen2.5-coder:7b    # 7B 編碼
+```
+
+---
+
+### 選項 C：使用 LM Studio（本地替代方案）
+
+LM Studio 提供圖形化介面管理本地模型，並內建 OpenAI 相容 API 伺服器，是 Mac 上的本地模型方案。
+
+#### C.1 安裝 LM Studio
 
 從 [lmstudio.ai](https://lmstudio.ai) 下載 macOS 版本並安裝。
 
-#### B.2 下載並載入模型
+#### C.2 下載並載入模型
 
 1. 開啟 LM Studio
 2. 搜尋並下載適合 16GB 的模型（例如 `MiniMax M2.5` 的較小量化版本）
@@ -330,7 +632,7 @@ LM Studio 提供圖形化介面管理本地模型，並內建 OpenAI 相容 API 
 curl http://127.0.0.1:1234/v1/models
 ```
 
-#### B.3 設定 OpenClaw 使用 LM Studio
+#### C.3 設定 OpenClaw 使用 LM Studio
 
 編輯 `~/.openclaw/openclaw.json`：
 
@@ -371,7 +673,7 @@ curl http://127.0.0.1:1234/v1/models
 
 ---
 
-### 選項 C：使用 Claude Code 訂閱
+### 選項 D：使用 Claude Code 訂閱
 
 Claude Code 提供強大的雲端 AI 能力，適合需要大上下文、高品質程式碼生成的場景。
 
@@ -427,31 +729,79 @@ openclaw models status
 
 ---
 
-### 混合模式：本地 + 雲端（推薦）
+### 混合模式：遠端 Ollama + 本地 + 雲端（最佳方案）
 
-針對 Mac Mini M4 16GB，**強烈推薦混合模式**：使用本地模型處理簡單/隱私敏感任務，雲端模型處理複雜任務。
+針對 Mac Mini M4 16GB，**最佳方案是三層混合模式**：遠端 24GB 的大模型為主力 → 本地小模型快速回應 → 雲端模型最終備援。
+
+#### 方案一：遠端 + 本地 + 雲端（推薦）
 
 ```json5
 {
   models: {
-    mode: "merge",  // 合併本地與雲端模型
+    mode: "merge",
     providers: {
+      // 遠端 24GB Mac Mini 大模型
+      "ollama-remote": {
+        baseUrl: "http://192.168.1.100:11434",  // 替換為實際 IP
+        apiKey: "ollama-remote",
+        api: "ollama",
+        models: []  // 自動探索遠端模型
+      },
+      // 本地 16GB 輕量模型
       ollama: {
         baseUrl: "http://127.0.0.1:11434",
         apiKey: "ollama-local",
         api: "ollama",
-        models: []  // 自動探索
+        models: []  // 自動探索本地模型
       }
     }
   },
   agents: {
     defaults: {
       model: {
-        // 雲端主力 + 本地 fallback
+        // 遠端 32B → 本地 7B → 雲端
+        primary: "ollama-remote/qwen2.5-coder:32b",
+        fallbacks: [
+          "ollama-remote/llama3.3",
+          "ollama/qwen2.5-coder:7b",
+          "anthropic/claude-sonnet-4-6"
+        ]
+      },
+      models: {
+        "ollama-remote/qwen2.5-coder:32b": { alias: "Qwen 32B Remote" },
+        "ollama-remote/deepseek-r1:32b": { alias: "DeepSeek R1 Remote" },
+        "ollama/qwen2.5-coder:7b": { alias: "Qwen 7B Local" },
+        "ollama/llama3.3": { alias: "Llama Local" },
+        "anthropic/claude-sonnet-4-6": { alias: "Sonnet" }
+      }
+    }
+  }
+}
+```
+
+#### 方案二：純本地 + 雲端（無遠端伺服器）
+
+若沒有第二台機器，使用本地小模型 + 雲端：
+
+```json5
+{
+  models: {
+    mode: "merge",
+    providers: {
+      ollama: {
+        baseUrl: "http://127.0.0.1:11434",
+        apiKey: "ollama-local",
+        api: "ollama",
+        models: []
+      }
+    }
+  },
+  agents: {
+    defaults: {
+      model: {
         primary: "anthropic/claude-sonnet-4-6",
         fallbacks: ["ollama/qwen2.5-coder:7b", "anthropic/claude-haiku-4-5"]
       },
-      // 提供模型別名方便切換
       models: {
         "anthropic/claude-sonnet-4-6": { alias: "Sonnet" },
         "anthropic/claude-haiku-4-5": { alias: "Haiku" },
@@ -462,17 +812,46 @@ openclaw models status
 }
 ```
 
-或者反過來，以本地為主、雲端為備援：
+#### 方案三：任務分流（遠端不同模型處理不同任務）
+
+透過多 Agent 讓不同任務使用最適合的模型：
 
 ```json5
 {
   agents: {
-    defaults: {
-      model: {
-        primary: "ollama/qwen2.5-coder:7b",
-        fallbacks: ["anthropic/claude-sonnet-4-6", "anthropic/claude-haiku-4-5"]
+    list: [
+      {
+        // 編碼任務：使用遠端 32B 模型
+        id: "coding",
+        name: "Code Assistant",
+        default: true,
+        model: {
+          primary: "ollama-remote/qwen2.5-coder:32b",
+          fallbacks: ["ollama/qwen2.5-coder:7b", "anthropic/claude-sonnet-4-6"]
+        },
+        workspace: "~/Projects/code"
+      },
+      {
+        // 推理分析：使用遠端 DeepSeek R1
+        id: "analysis",
+        name: "Analysis Agent",
+        model: {
+          primary: "ollama-remote/deepseek-r1:32b",
+          fallbacks: ["anthropic/claude-opus-4-6"]
+        },
+        workspace: "~/Projects/analysis"
+      },
+      {
+        // 快速回應：使用本地輕量模型（不依賴網路）
+        id: "quick",
+        name: "Quick Responder",
+        model: {
+          primary: "ollama/llama3.3",
+          fallbacks: ["ollama/llama3.2:3b"]
+        },
+        workspace: "~/Projects/quick"
       }
-    }
+    ]
   }
 }
 ```
@@ -847,25 +1226,44 @@ openclaw config set tools.profile '"coding"' --json
 
 ```json5
 {
-  // === AI 模型設定 ===
+  // === AI 模型設定（遠端 + 本地 + 雲端三層架構） ===
   models: {
-    mode: "merge",  // 合併本地與雲端模型
+    mode: "merge",  // 合併遠端、本地與雲端模型
     providers: {
+      // 遠端 Mac Mini M4 24GB 上的 Ollama（大模型主力）
+      "ollama-remote": {
+        baseUrl: "http://192.168.1.100:11434",  // 替換為 24GB Mac Mini 實際 IP
+        apiKey: "ollama-remote",
+        api: "ollama",
+        models: []  // 自動探索遠端模型
+      },
+      // 本機 16GB 上的 Ollama（輕量模型 + 離線備援）
       ollama: {
         baseUrl: "http://127.0.0.1:11434",
         apiKey: "ollama-local",
         api: "ollama",
-        models: []  // 自動探索本機 Ollama 模型
+        models: []  // 自動探索本機模型
       }
     }
   },
 
-  // === Agent 設定 ===
+  // === Agent 設定（遠端優先） ===
   agents: {
     defaults: {
       model: {
-        primary: "anthropic/claude-sonnet-4-6",
-        fallbacks: ["ollama/qwen2.5-coder:7b", "anthropic/claude-haiku-4-5"]
+        primary: "ollama-remote/qwen2.5-coder:32b",    // 遠端 32B 主力
+        fallbacks: [
+          "ollama-remote/llama3.3",                      // 遠端快速回應
+          "ollama/qwen2.5-coder:7b",                     // 本地備援
+          "anthropic/claude-sonnet-4-6"                   // 雲端最終備援
+        ]
+      },
+      models: {
+        "ollama-remote/qwen2.5-coder:32b": { alias: "Qwen 32B Remote" },
+        "ollama-remote/deepseek-r1:32b": { alias: "DeepSeek R1 Remote" },
+        "ollama/qwen2.5-coder:7b": { alias: "Qwen 7B Local" },
+        "ollama/llama3.3": { alias: "Llama Local" },
+        "anthropic/claude-sonnet-4-6": { alias: "Sonnet" }
       },
       thinking: "adaptive",
       workspace: "~/Projects",
@@ -881,7 +1279,7 @@ openclaw config set tools.profile '"coding"' --json
         workspace: "~/Projects",
         identity: {
           name: "OpenClaw",
-          soul: "你是一個專業的程式設計助手，運行在 Mac Mini M4 上。你會使用繁體中文回應。當被要求建立專案時，你會撰寫程式碼、建立 Git 儲存庫、上傳到 GitHub，並在完成後透過 Gmail 發送通知。"
+          soul: "你是一個專業的程式設計助手，運行在 Mac Mini M4 上，透過遠端 24GB Mac Mini 存取 32B 大模型。你會使用繁體中文回應。當被要求建立專案時，你會撰寫程式碼、建立 Git 儲存庫、上傳到 GitHub，並在完成後透過 Gmail 發送通知。"
         }
       }
     ]
@@ -944,6 +1342,7 @@ openclaw config set tools.profile '"coding"' --json
       serve: { bind: "127.0.0.1", port: 8788, path: "/" },
       tailscale: { mode: "funnel", path: "/gmail-pubsub" },
 
+      // Gmail 處理使用本地輕量模型（不佔用遠端 32B 資源）
       model: "ollama/llama3.3",
       thinking: "off"
     },
@@ -1217,10 +1616,10 @@ openclaw channels status --probe
 # 5. 長時間回應逾時 → 增加 eventQueue.listenerTimeout
 ```
 
-### Ollama 相關
+### Ollama 相關（本地）
 
 ```bash
-# 確認 Ollama 服務運行中
+# 確認本地 Ollama 服務運行中
 curl http://127.0.0.1:11434/api/tags
 
 # 常見原因與解法：
@@ -1229,6 +1628,40 @@ curl http://127.0.0.1:11434/api/tags
 # 3. 記憶體不足 → 切換到較小的模型（3B-7B）
 # 4. baseUrl 錯誤 → 原生 API 不含 /v1（http://127.0.0.1:11434）
 # 5. apiKey 未設定 → 設定任意值（如 "ollama-local"）
+```
+
+### 遠端 Ollama 相關（Mac Mini M4 24GB）
+
+```bash
+# 確認遠端 Ollama 服務可達（替換為實際 IP）
+curl http://192.168.1.100:11434/api/tags
+
+# 查看遠端目前載入的模型
+curl http://192.168.1.100:11434/api/ps
+
+# 常見原因與解法：
+# 1. 連線被拒（Connection refused）
+#    → 確認遠端 Ollama 設定了 OLLAMA_HOST=0.0.0.0:11434
+#    → 確認遠端 Ollama 服務正在運行：ssh user@192.168.1.100 'curl 127.0.0.1:11434/api/tags'
+#    → 重啟遠端 Ollama：ssh user@192.168.1.100 'pkill ollama && ollama serve &'
+#
+# 2. 網路不通（No route to host / Connection timed out）
+#    → 確認兩台機器在同一區域網路：ping 192.168.1.100
+#    → 確認遠端 IP 正確：ssh user@192.168.1.100 'ipconfig getifaddr en0'
+#    → 檢查防火牆：確認 macOS 防火牆允許 port 11434
+#
+# 3. 遠端模型回應極慢
+#    → 查看遠端記憶體壓力：ssh user@192.168.1.100 'memory_pressure'
+#    → 降低 contextWindow 或使用較小模型
+#    → 確認 OLLAMA_MAX_LOADED_MODELS=1（32B 模型時）
+#
+# 4. 自動探索找不到遠端模型
+#    → 確認 provider 的 api 設為 "ollama"（不是 "openai-completions"）
+#    → 手動指定 models 陣列，不依賴自動探索
+#
+# 5. Fallback 未生效（遠端斷線後未切換到本地）
+#    → 確認 fallbacks 陣列包含本地模型（ollama/... 開頭的）
+#    → 確認本地 Ollama 也在運行
 ```
 
 ### Claude Code 相關
@@ -1311,6 +1744,8 @@ openclaw models list
 | 查看日誌 | `openclaw logs --follow` |
 | Discord 配對 | `openclaw pairing approve discord <CODE>` |
 | Gmail 設定 | `openclaw webhooks gmail setup --account email` |
+| 測試遠端 Ollama | `curl http://REMOTE_IP:11434/api/tags` |
+| 查看遠端載入模型 | `curl http://REMOTE_IP:11434/api/ps` |
 | 配置路徑 | `~/.openclaw/openclaw.json` |
 | 環境變數 | `~/.openclaw/.env` |
 
@@ -1321,11 +1756,13 @@ openclaw models list
 完成以上設定後，你的 Mac Mini M4 16GB 將成為一個功能完整的 AI 開發助手平台：
 
 1. **透過 Discord 接收開發請求** — 在 Discord 頻道或私訊中與 Agent 互動
-2. **使用本地 Ollama 或 Claude Code 處理 AI 任務** — 混合模式兼顧隱私與效能
-3. **自動接收 Gmail 並觸發 AI 處理** — 新郵件自動通知到 Discord
-4. **撰寫程式碼並自動上傳到 GitHub** — Agent 可建立專案、初始化 Git、推送到 GitHub
-5. **發送 Gmail 通知完成狀態** — 完成任務後自動發送郵件通知
-6. **在 Discord 中回報進度** — 全程在 Discord 追蹤任務進展
+2. **透過遠端 Mac Mini M4 24GB 存取 32B 大模型** — 本地 16GB + 遠端 24GB 雙機協作
+3. **本地輕量模型作為備援** — 網路斷線時自動切換到本地 7B 模型
+4. **使用 Claude Code 作為最終備援** — 雲端模型處理超複雜任務
+5. **自動接收 Gmail 並觸發 AI 處理** — 新郵件自動通知到 Discord
+6. **撰寫程式碼並自動上傳到 GitHub** — Agent 可建立專案、初始化 Git、推送到 GitHub
+7. **發送 Gmail 通知完成狀態** — 完成任務後自動發送郵件通知
+8. **在 Discord 中回報進度** — 全程在 Discord 追蹤任務進展
 
 如有任何問題，請參考：
 - [官方文件](https://docs.openclaw.ai)
