@@ -26,6 +26,7 @@
 ### 實戰指南
 - [從零開始設定實作](./12-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
 - [從零開始設定實作（Mac Mini M4 16G）](./13-從零開始設定實作(Mac-Mini-M4-16G).md) - Mac Mini M4 16GB 專用設定指南（含硬體最佳化）
+- [從零開始設定實作（Mac Mini M4 24G）](./14-從零開始設定實作(Mac-Mini-M4-24G).md) - Mac Mini M4 24GB 專用設定指南（32B 模型 + 記憶體深度優化）
 
 ## 版本
 
