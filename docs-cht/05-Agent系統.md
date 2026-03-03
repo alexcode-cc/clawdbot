@@ -169,7 +169,8 @@ Agent 工作區支援以下特殊檔案：
 | `canvas` | Canvas A2UI |
 | `cron` | 排程任務 |
 | `sessions` | 會話管理 |
-| `diffs` | 差異渲染（before/after 或 unified patch） |
+| `diffs` | 差異渲染（before/after 或 unified patch，支援 PDF 輸出） |
+| `pdf` | PDF 文件分析（原生 Anthropic/Google 支援，非原生自動降級） |
 | `agents_list` | 代理清單 |
 | `message` | 訊息發送 |
 | `gateway` | Gateway 操作 |
@@ -180,8 +181,10 @@ Agent 工作區支援以下特殊檔案：
 |--------|---------|
 | `minimal` | 基本檔案操作 |
 | `coding` | 檔案 + exec + search |
-| `messaging` | 頻道互動 |
+| `messaging` | 頻道互動（新安裝預設值） |
 | `full` | 所有工具 |
+
+> **注意**：自 2026-03-03 起，新安裝的 `tools.profile` 預設改為 `messaging`。需要 coding/system 工具需明確配置。
 
 ### 按提供商限制工具
 
@@ -228,17 +231,18 @@ const sandbox: SandboxOptions = {
 | 提供者 | 模型 |
 |--------|------|
 | Anthropic | Claude 4.6（預設 adaptive thinking）、Claude Opus/Sonnet/Haiku 4.5 |
-| OpenAI | GPT-4o, GPT-5.2（預設 WebSocket 串流） |
+| OpenAI | GPT-4o, GPT-5.2（預設 WebSocket 串流；`transport: "auto"`，SSE 降級） |
 | Mistral | Mistral 模型 |
 | Ollama | Llama 3.3, Qwen 2.5, DeepSeek R1 等 |
-| OpenRouter | 多種模型 |
+| OpenRouter | 多種模型（x-ai/grok 自動跳過 `reasoning.effort` 注入） |
 | Together AI | Llama、DeepSeek、Kimi 等開源模型 |
 | Bedrock | Claude (AWS)（包含 Bedrock Claude 4.6 refs） |
 | Qwen | 通義千問 |
 | xAI | Grok |
-| MiniMax | MiniMax Portal（OAuth 認證） |
-| Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth） |
+| MiniMax | MiniMax Portal（OAuth 認證）；支援 `MiniMax-M2.5-highspeed` |
+| Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`） |
 | Copilot | Copilot Proxy（支援 token 過期自動重新整理） |
+| Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout |
 
 ### 模型配置
 
@@ -431,3 +435,74 @@ Agent 系統支援多層降級策略：
 ## Shell 環境標記
 
 所有 shell-like 執行環境（`exec`、`acp`、`acp-client`、`tui-local`）會注入 `OPENCLAW_SHELL` 環境變數，讓 shell startup/config 規則可以識別 OpenClaw 執行上下文。
+
+## PDF 分析工具
+
+新增一等公民 `pdf` 工具，支援原生 Anthropic 與 Google 提供者，非原生模型自動降級為提取模式。
+
+```json5
+{
+  agents: {
+    defaults: {
+      pdfModel: "anthropic/claude-sonnet-4-5",  // PDF 分析首選模型
+      pdfMaxBytesMb: 10,                          // 最大 PDF 大小（MB）
+      pdfMaxPages: 50                             // 最大頁數
+    }
+  }
+}
+```
+
+## 音頻轉錄回聲
+
+```json5
+{
+  tools: {
+    media: {
+      audio: {
+        echoTranscript: true,        // 在代理處理前向聊天發送轉錄
+        echoFormat: "blockquote"     // plain | blockquote | code
+      }
+    }
+  }
+}
+```
+
+## sessions_spawn 內聯附件
+
+子代理執行時可傳遞內聯檔案附件：
+```json5
+{
+  tools: {
+    sessions_spawn: {
+      attachments: {
+        maxSizeBytes: 1048576,  // 每附件最大大小（bytes）
+        maxCount: 5             // 最大附件數
+      }
+    }
+  }
+}
+```
+
+## 記憶沖洗強制預壓縮
+
+防止長對話在 token 快照過期時卡住：
+```json5
+{
+  agents: {
+    defaults: {
+      compaction: {
+        memoryFlush: {
+          forceFlushTranscriptBytes: 2097152  // 2MB，預設值
+        }
+      }
+    }
+  }
+}
+```
+
+## Hooks 訊息生命週期
+
+新增的 hook 事件：
+- `message:transcribed` — 音頻轉錄完成後觸發
+- `message:preprocessed` — 訊息前處理完成後觸發
+- `message:sent` — 新增 `isGroup`（是否為群組）、`groupId`（群組 ID）欄位
