@@ -67,6 +67,7 @@ src/cli/program.ts (buildProgram)
 | `channels` | 頻道管理 |
 | `directory` | 目錄操作 |
 | `security` | 安全設定 |
+| `secrets` | Secrets 管理（reload、audit、configure） |
 | `skills` | 技能管理 |
 | `update` | 更新檢查（支援 `--dry-run`） |
 | `memory` | 記憶系統 |
@@ -156,6 +157,9 @@ openclaw config set models.default claude-sonnet
 
 # 編輯配置檔
 openclaw config edit
+
+# 顯示目前使用的配置檔路徑
+openclaw config file
 ```
 
 ### agent - Agent 執行
@@ -262,6 +266,19 @@ openclaw update --dry-run
 ```bash
 # 完整診斷
 openclaw doctor
+```
+
+### secrets - Secrets 管理
+
+```bash
+# 重新載入 secrets
+openclaw secrets reload
+
+# 審計 secrets 使用情況
+openclaw secrets audit
+
+# 配置 secrets
+openclaw secrets configure
 ```
 
 ## 選項和旗標

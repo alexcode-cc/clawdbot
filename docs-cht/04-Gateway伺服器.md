@@ -236,9 +236,21 @@ interface NodeCapabilities {
 
 ## HTTP 端點
 
+### 健康檢查探針（Container Probes）
+
+| 端點 | 方法 | 類型 | 說明 |
+|------|------|------|------|
+| `/health` | GET/HEAD | Liveness | 存活探針 |
+| `/healthz` | GET/HEAD | Liveness | 存活探針（Kubernetes 慣例） |
+| `/ready` | GET/HEAD | Readiness | 就緒探針 |
+| `/readyz` | GET/HEAD | Readiness | 就緒探針（Kubernetes 慣例） |
+
+適用於 Docker `HEALTHCHECK` 和 Kubernetes probe 配置。Dockerfile 內建 `HEALTHCHECK` 使用 `GET /healthz`，不需認證。
+
+### 應用 API
+
 | 端點 | 方法 | 說明 |
 |------|------|------|
-| `/health` | GET | 健康檢查 |
 | `/api/chat` | POST | HTTP 聊天 API |
 | `/api/config` | GET/POST | 配置 API |
 | `/webhooks/*` | POST | Webhook 處理 |
@@ -295,11 +307,34 @@ Gateway 內建 Cron 排程系統，支援定時任務：
 }
 ```
 
+## Secrets 管理
+
+Gateway 支援 Secrets 引用機制，配置中的敏感值可使用 `SecretRef` 引用：
+
+```json5
+{
+  providers: {
+    anthropic: {
+      keyRef: "secrets/anthropic-key"
+    }
+  }
+}
+```
+
+CLI 指令：
+```bash
+openclaw secrets reload    # 重新載入 secrets
+openclaw secrets audit     # 審計 secrets 使用
+openclaw secrets configure # 配置 secrets
+```
+
 ## 安全考量
 
 1. **Token 認證**: 客戶端需提供有效 Token
 2. **設備身份**: 支援設備簽名驗證（v2 簽名，已移除舊版 v1）
 3. **TLS 加密**: 生產環境建議使用 WSS
-4. **CORS 設定**: 控制跨域存取
-5. **速率限制**: 防止濫用
-6. **Sanitize**: 最終回覆清理不受信任的包裝標記
+4. **WS 安全策略**: 預設僅允許 loopback `ws://`，私網需 `OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1` 明確 opt-in
+5. **CORS 設定**: 控制跨域存取（Control UI 支援 `allowedOrigins: ["*"]` 萬用字元）
+6. **速率限制**: 防止濫用（包括重複未授權請求洪水防護）
+7. **Sanitize**: 最終回覆清理不受信任的包裝標記
+8. **Secrets 引用**: inline SecretRef 自動規範化為 canonical `tokenRef`/`keyRef`
