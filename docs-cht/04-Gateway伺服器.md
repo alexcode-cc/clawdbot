@@ -328,6 +328,19 @@ openclaw secrets audit     # 審計 secrets 使用
 openclaw secrets configure # 配置 secrets
 ```
 
+## SecretRef 管理
+
+Gateway 支援完整的 SecretRef 機制，涵蓋 64 個使用者提供的憑證目標：
+
+- **執行時快照模型**：eager resolution + atomic swap
+- **活動表面篩選**：未解析的 ref 在活動表面 fail fast，非活動表面報告非阻塞診斷
+- **`openclaw secrets`**：`plan`（規劃）、`apply`（套用）、`audit`（審計）、`configure`（配置）流程
+- **Onboarding SecretInput UX**：引導設定 SecretRef
+
+## Agent 發現
+
+`listConfiguredAgentIds` 現在也包含磁碟掃描的 agent IDs（即使 `agents.list` 已配置），確保磁碟上的 ACP agent session 在 session 聚合和列表中可見。
+
 ## 安全考量
 
 1. **Token 認證**: 客戶端需提供有效 Token
@@ -338,3 +351,6 @@ openclaw secrets configure # 配置 secrets
 6. **速率限制**: 防止濫用（包括重複未授權請求洪水防護）
 7. **Sanitize**: 最終回覆清理不受信任的包裝標記
 8. **Secrets 引用**: inline SecretRef 自動規範化為 canonical `tokenRef`/`keyRef`
+9. **HTTP 安全標頭**: 預設 `Permissions-Policy: camera=(), microphone=(), geolocation=()` + `X-Content-Type-Options: nosniff`（media route）
+10. **Auth 標籤安全**: `/status` 和 `/models` 不再暴露 token/API key 片段
+11. **denyCommands 審計**: 建議有效的 `gateway.nodes.denyCommands` 條目
