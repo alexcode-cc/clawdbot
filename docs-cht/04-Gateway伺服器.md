@@ -7,47 +7,47 @@ Gateway 是 OpenClaw 的核心伺服器元件，提供 WebSocket 即時通訊、
 ## 架構
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │          Gateway Server             │
-                    │                                     │
+                    ┌────────────────────────────────────┐
+                    │          Gateway Server            │
+                    │                                    │
 ┌─────────┐         │  ┌──────────────────────────────┐  │
-│ Web UI  │─────────┼─▶│     WebSocket Handler        │  │
+│ Web UI  │─────────┼▶│     WebSocket Handler        │  │
 └─────────┘         │  │  ┌────────────────────────┐  │  │
                     │  │  │ Connection Manager     │  │  │
 ┌─────────┐         │  │  │ - authenticate         │  │  │
-│  iOS    │─────────┼─▶│  │ - route messages       │  │  │
+│  iOS    │─────────┼▶│  │ - route messages       │  │  │
 │  App    │         │  │  │ - broadcast events     │  │  │
 └─────────┘         │  │  └────────────────────────┘  │  │
                     │  └──────────────────────────────┘  │
-┌─────────┐         │                                     │
-│ Android │─────────┼─▶┌──────────────────────────────┐  │
-│  App    │         │  │      RPC Methods            │  │
+┌─────────┐         │                                    │
+│ Android │─────────┼▶┌──────────────────────────────┐  │
+│  App    │         │  │      RPC Methods             │  │
 └─────────┘         │  │  - chat.*                    │  │
                     │  │  - config.*                  │  │
-┌─────────┐         │  │  - channels.*               │  │
-│ macOS   │─────────┼─▶│  - node.*                   │  │
-│  App    │         │  │  - system.*                 │  │
+┌─────────┐         │  │  - channels.*                │  │
+│ macOS   │─────────┼▶│  - node.*                    │  │
+│  App    │         │  │  - system.*                  │  │
 └─────────┘         │  └──────────────────────────────┘  │
-                    │                                     │
+                    │                                    │
                     │  ┌──────────────────────────────┐  │
-                    │  │     Runtime State           │  │
-                    │  │  - chatRunState             │  │
-                    │  │  - chatRunBuffers           │  │
-                    │  │  - wsConnections            │  │
+                    │  │     Runtime State            │  │
+                    │  │  - chatRunState              │  │
+                    │  │  - chatRunBuffers            │  │
+                    │  │  - wsConnections             │  │
                     │  └──────────────────────────────┘  │
                     └─────────────────────────────────────┘
 ```
 
 ## 核心檔案
 
-| 檔案 | 說明 |
-|------|------|
-| `src/gateway/server.impl.ts` | Gateway 伺服器主實作 |
-| `src/gateway/server-runtime-state.ts` | 運行時狀態管理 |
-| `src/gateway/server-methods.ts` | RPC 方法處理器 |
-| `src/gateway/server-methods/*.ts` | 各類方法實作 |
-| `src/gateway/server/ws-connection/` | WebSocket 連接處理 |
-| `src/gateway/protocol/` | 協議定義（TypeBox） |
+| 檔案                                  | 說明                 |
+| ------------------------------------- | -------------------- |
+| `src/gateway/server.impl.ts`          | Gateway 伺服器主實作 |
+| `src/gateway/server-runtime-state.ts` | 運行時狀態管理       |
+| `src/gateway/server-methods.ts`       | RPC 方法處理器       |
+| `src/gateway/server-methods/*.ts`     | 各類方法實作         |
+| `src/gateway/server/ws-connection/`   | WebSocket 連接處理   |
+| `src/gateway/protocol/`               | 協議定義（TypeBox）  |
 
 ## 啟動流程
 
@@ -57,24 +57,24 @@ export async function startGatewayServer(options: GatewayServerOptions) {
   // 1. 建立 HTTP 伺服器
   const app = express();
   const server = http.createServer(app);
-  
+
   // 2. 建立 WebSocket 伺服器
   const wss = new WebSocketServer({ server });
-  
+
   // 3. 初始化運行時狀態
   const state = createGatewayRuntimeState();
-  
+
   // 4. 註冊 RPC 方法
   registerGatewayMethods(state, options);
-  
+
   // 5. 設定 WebSocket 處理
-  wss.on('connection', (ws, req) => {
+  wss.on("connection", (ws, req) => {
     handleConnection(ws, req, state);
   });
-  
+
   // 6. 啟動伺服器
   server.listen(options.port, options.bind);
-  
+
   return { server, wss, state };
 }
 ```
@@ -86,17 +86,18 @@ export async function startGatewayServer(options: GatewayServerOptions) {
 ```typescript
 // 請求
 interface RpcRequest {
-  id: string;           // 請求 ID
-  method: string;       // 方法名稱
-  params?: unknown;     // 參數
+  id: string; // 請求 ID
+  method: string; // 方法名稱
+  params?: unknown; // 參數
 }
 
 // 回應
 interface RpcResponse {
-  id: string;           // 對應請求 ID
-  success: boolean;     // 是否成功
-  result?: unknown;     // 結果
-  error?: {             // 錯誤資訊
+  id: string; // 對應請求 ID
+  success: boolean; // 是否成功
+  result?: unknown; // 結果
+  error?: {
+    // 錯誤資訊
     code: string;
     message: string;
   };
@@ -104,8 +105,8 @@ interface RpcResponse {
 
 // 事件
 interface RpcEvent {
-  type: string;         // 事件類型
-  payload: unknown;     // 事件資料
+  type: string; // 事件類型
+  payload: unknown; // 事件資料
 }
 ```
 
@@ -139,51 +140,51 @@ Client                              Gateway
 
 ## RPC 方法
 
-### 聊天相關 (chat.*)
+### 聊天相關 (chat.\*)
 
-| 方法 | 說明 |
-|------|------|
-| `chat.send` | 發送使用者訊息 |
-| `chat.abort` | 中止執行中的回應 |
-| `chat.sessions.list` | 列出會話 |
-| `chat.sessions.get` | 取得會話詳情 |
-| `chat.sessions.delete` | 刪除會話 |
-| `chat.history` | 取得對話歷史 |
+| 方法                   | 說明             |
+| ---------------------- | ---------------- |
+| `chat.send`            | 發送使用者訊息   |
+| `chat.abort`           | 中止執行中的回應 |
+| `chat.sessions.list`   | 列出會話         |
+| `chat.sessions.get`    | 取得會話詳情     |
+| `chat.sessions.delete` | 刪除會話         |
+| `chat.history`         | 取得對話歷史     |
 
-### 配置相關 (config.*)
+### 配置相關 (config.\*)
 
-| 方法 | 說明 |
-|------|------|
-| `config.get` | 取得配置 |
-| `config.set` | 設定配置 |
-| `config.list` | 列出配置 |
+| 方法            | 說明         |
+| --------------- | ------------ |
+| `config.get`    | 取得配置     |
+| `config.set`    | 設定配置     |
+| `config.list`   | 列出配置     |
 | `config.reload` | 重新載入配置 |
 
-### 頻道相關 (channels.*)
+### 頻道相關 (channels.\*)
 
-| 方法 | 說明 |
-|------|------|
-| `channels.status` | 頻道狀態 |
-| `channels.connect` | 連接頻道 |
+| 方法                  | 說明     |
+| --------------------- | -------- |
+| `channels.status`     | 頻道狀態 |
+| `channels.connect`    | 連接頻道 |
 | `channels.disconnect` | 斷開頻道 |
-| `channels.send` | 發送訊息 |
+| `channels.send`       | 發送訊息 |
 
-### 節點相關 (node.*)
+### 節點相關 (node.\*)
 
-| 方法 | 說明 |
-|------|------|
-| `node.register` | 註冊節點 |
+| 方法                  | 說明         |
+| --------------------- | ------------ |
+| `node.register`       | 註冊節點     |
 | `node.invoke.request` | 呼叫節點能力 |
-| `node.invoke.result` | 節點回傳結果 |
-| `node.event` | 節點事件 |
+| `node.invoke.result`  | 節點回傳結果 |
+| `node.event`          | 節點事件     |
 
-### 系統相關 (system.*)
+### 系統相關 (system.\*)
 
-| 方法 | 說明 |
-|------|------|
+| 方法            | 說明     |
+| --------------- | -------- |
 | `system.health` | 健康檢查 |
-| `system.info` | 系統資訊 |
-| `system.logs` | 日誌查詢 |
+| `system.info`   | 系統資訊 |
+| `system.logs`   | 日誌查詢 |
 
 ## 運行時狀態
 
@@ -201,17 +202,17 @@ export interface GatewayRuntimeState {
 
 ## 常見事件類型
 
-| 事件 | 說明 |
-|------|------|
-| `chat.message` | 新訊息（使用者/助手） |
-| `chat.typing` | 正在輸入 |
-| `chat.tool.start` | 工具開始執行 |
-| `chat.tool.result` | 工具執行結果 |
-| `chat.complete` | 回應完成 |
-| `chat.error` | 錯誤發生 |
-| `channels.status.changed` | 頻道狀態變更 |
-| `node.connected` | 節點連接 |
-| `node.disconnected` | 節點斷開 |
+| 事件                      | 說明                  |
+| ------------------------- | --------------------- |
+| `chat.message`            | 新訊息（使用者/助手） |
+| `chat.typing`             | 正在輸入              |
+| `chat.tool.start`         | 工具開始執行          |
+| `chat.tool.result`        | 工具執行結果          |
+| `chat.complete`           | 回應完成              |
+| `chat.error`              | 錯誤發生              |
+| `channels.status.changed` | 頻道狀態變更          |
+| `node.connected`          | 節點連接              |
+| `node.disconnected`       | 節點斷開              |
 
 ## 節點系統
 
@@ -230,7 +231,7 @@ interface NodeCapabilities {
   location?: boolean;
   microphone?: boolean;
   tts?: boolean;
-  sms?: boolean;  // Android
+  sms?: boolean; // Android
 }
 ```
 
@@ -238,29 +239,29 @@ interface NodeCapabilities {
 
 ### 健康檢查探針（Container Probes）
 
-| 端點 | 方法 | 類型 | 說明 |
-|------|------|------|------|
-| `/health` | GET/HEAD | Liveness | 存活探針 |
-| `/healthz` | GET/HEAD | Liveness | 存活探針（Kubernetes 慣例） |
-| `/ready` | GET/HEAD | Readiness | 就緒探針 |
-| `/readyz` | GET/HEAD | Readiness | 就緒探針（Kubernetes 慣例） |
+| 端點       | 方法     | 類型      | 說明                        |
+| ---------- | -------- | --------- | --------------------------- |
+| `/health`  | GET/HEAD | Liveness  | 存活探針                    |
+| `/healthz` | GET/HEAD | Liveness  | 存活探針（Kubernetes 慣例） |
+| `/ready`   | GET/HEAD | Readiness | 就緒探針                    |
+| `/readyz`  | GET/HEAD | Readiness | 就緒探針（Kubernetes 慣例） |
 
 適用於 Docker `HEALTHCHECK` 和 Kubernetes probe 配置。Dockerfile 內建 `HEALTHCHECK` 使用 `GET /healthz`，不需認證。
 
 ### 應用 API
 
-| 端點 | 方法 | 說明 |
-|------|------|------|
-| `/api/chat` | POST | HTTP 聊天 API |
-| `/api/config` | GET/POST | 配置 API |
-| `/webhooks/*` | POST | Webhook 處理 |
+| 端點          | 方法     | 說明          |
+| ------------- | -------- | ------------- |
+| `/api/chat`   | POST     | HTTP 聊天 API |
+| `/api/config` | GET/POST | 配置 API      |
+| `/webhooks/*` | POST     | Webhook 處理  |
 
 ## 配置選項
 
 ```typescript
 interface GatewayServerOptions {
-  port: number;               // 埠號（預設 18789）
-  bind: 'loopback' | 'lan' | string;
+  port: number; // 埠號（預設 18789）
+  bind: "loopback" | "lan" | string;
   token?: string;
   allowUnconfigured?: boolean;
   tlsCert?: string;
@@ -300,10 +301,10 @@ Gateway 內建 Cron 排程系統，支援定時任務：
         agent: "main",
         message: "每日摘要",
         channel: "discord",
-        to: "user:USER_ID"
-      }
-    ]
-  }
+        to: "user:USER_ID",
+      },
+    ],
+  },
 }
 ```
 
@@ -315,13 +316,14 @@ Gateway 支援 Secrets 引用機制，配置中的敏感值可使用 `SecretRef`
 {
   providers: {
     anthropic: {
-      keyRef: "secrets/anthropic-key"
-    }
-  }
+      keyRef: "secrets/anthropic-key",
+    },
+  },
 }
 ```
 
 CLI 指令：
+
 ```bash
 openclaw secrets reload    # 重新載入 secrets
 openclaw secrets audit     # 審計 secrets 使用

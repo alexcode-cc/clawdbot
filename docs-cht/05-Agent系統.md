@@ -10,50 +10,50 @@ Agent 系統是 OpenClaw 的核心 AI 引擎，負責處理使用者訊息、呼
                     ┌─────────────────────────────────────┐
                     │           Agent System              │
                     │                                     │
-使用者訊息 ─────────▶│  ┌──────────────────────────────┐  │
-                    │  │      System Prompt Builder    │  │
-                    │  │  - 身份設定                    │  │
-                    │  │  - 工具描述                    │  │
-                    │  │  - 上下文注入                  │  │
-                    │  └──────────────────────────────┘  │
+使用者訊息 ────────▶│  ┌──────────────────────────────┐   │
+                    │  │      System Prompt Builder   │   │
+                    │  │  - 身份設定                   │   │
+                    │  │  - 工具描述                   │   │
+                    │  │  - 上下文注入                 │   │
+                    │  └──────────────────────────────┘   │
                     │              │                      │
                     │              ▼                      │
-                    │  ┌──────────────────────────────┐  │
-                    │  │        LLM Provider          │  │
-                    │  │  - Anthropic (Claude)        │  │
-                    │  │  - OpenAI (GPT)              │  │
-                    │  │  - Mistral                   │  │
-                    │  │  - Ollama (Local)            │  │
-                    │  │  - Google Gemini             │  │
-                    │  │  - OpenRouter               │  │
-                    │  └──────────────────────────────┘  │
+                    │  ┌──────────────────────────────┐   │
+                    │  │        LLM Provider          │   │
+                    │  │  - Anthropic (Claude)        │   │
+                    │  │  - OpenAI (GPT)              │   │
+                    │  │  - Mistral                   │   │
+                    │  │  - Ollama (Local)            │   │
+                    │  │  - Google Gemini             │   │
+                    │  │  - OpenRouter                │   │
+                    │  └──────────────────────────────┘   │
                     │              │                      │
                     │              ▼                      │
-                    │  ┌──────────────────────────────┐  │
-                    │  │       Tool Executor          │  │
-                    │  │  - exec (Shell)              │  │
-                    │  │  - read/write (File)         │  │
-                    │  │  - browser                   │  │
-                    │  │  - search                    │  │
-                    │  │  - node.* (Device)           │  │
-                    │  └──────────────────────────────┘  │
+                    │  ┌──────────────────────────────┐   │
+                    │  │       Tool Executor          │   │
+                    │  │  - exec (Shell)              │   │
+                    │  │  - read/write (File)         │   │
+                    │  │  - browser                   │   │
+                    │  │  - search                    │   │
+                    │  │  - node.* (Device)           │   │
+                    │  └──────────────────────────────┘   │
                     │              │                      │
                     │              ▼                      │
                     └──────────────┼──────────────────────┘
                                    │
-                    助手回應 ◀──────┘
+                    助手回應 ◀─────┘
 ```
 
 ## 核心檔案
 
-| 檔案 | 說明 |
-|------|------|
-| `src/agents/agent-scope.ts` | Agent 配置解析、路徑解析 |
-| `src/agents/system-prompt.ts` | 系統提示詞建構 |
-| `src/agents/openclaw-tools.ts` | 核心工具建立 |
-| `src/agents/pi-embedded-runner/` | Pi Agent 嵌入式執行器 |
-| `src/agents/workspace.ts` | Agent 工作區管理 |
-| `src/agents/tool-policy.ts` | 工具使用策略 |
+| 檔案                             | 說明                     |
+| -------------------------------- | ------------------------ |
+| `src/agents/agent-scope.ts`      | Agent 配置解析、路徑解析 |
+| `src/agents/system-prompt.ts`    | 系統提示詞建構           |
+| `src/agents/openclaw-tools.ts`   | 核心工具建立             |
+| `src/agents/pi-embedded-runner/` | Pi Agent 嵌入式執行器    |
+| `src/agents/workspace.ts`        | Agent 工作區管理         |
+| `src/agents/tool-policy.ts`      | 工具使用策略             |
 
 ## Agent 配置
 
@@ -72,9 +72,9 @@ interface AgentConfig {
 
 interface AgentIdentity {
   name?: string;
-  soul?: string;   // SOUL.md
-  boot?: string;   // BOOT.md / BOOTSTRAP.md
-  user?: string;   // USER.md
+  soul?: string; // SOUL.md
+  boot?: string; // BOOT.md / BOOTSTRAP.md
+  user?: string; // USER.md
 }
 ```
 
@@ -82,23 +82,23 @@ interface AgentIdentity {
 
 ```json5
 {
-  "agents": {
-    "default": {
-      "id": "default",
-      "name": "OpenClaw",
-      "model": "claude-sonnet",
-      "workspace": "~/Projects",
-      "identity": {
-        "name": "OpenClaw",
-        "soul": "You are a helpful AI assistant."
+  agents: {
+    default: {
+      id: "default",
+      name: "OpenClaw",
+      model: "claude-sonnet",
+      workspace: "~/Projects",
+      identity: {
+        name: "OpenClaw",
+        soul: "You are a helpful AI assistant.",
       },
-      "tools": {
-        "exec": { "enabled": true },
-        "browser": { "enabled": true },
-        "node": { "enabled": true }
-      }
-    }
-  }
+      tools: {
+        exec: { enabled: true },
+        browser: { enabled: true },
+        node: { enabled: true },
+      },
+    },
+  },
 }
 ```
 
@@ -110,29 +110,29 @@ interface AgentIdentity {
 // src/agents/system-prompt.ts
 export async function buildSystemPrompt(options: SystemPromptOptions) {
   const parts: string[] = [];
-  
+
   // 1. 身份區塊
   parts.push(buildIdentitySection(options.identity));
-  
+
   // 2. 工具描述
   parts.push(buildToolsSection(options.tools));
-  
+
   // 3. 上下文資訊
   if (options.context) {
     parts.push(buildContextSection(options.context));
   }
-  
+
   // 4. 使用者資訊
   if (options.user) {
     parts.push(buildUserSection(options.user));
   }
-  
+
   // 5. 特殊指令
   if (options.boot) {
     parts.push(options.boot);
   }
-  
-  return parts.join('\n\n');
+
+  return parts.join("\n\n");
 }
 ```
 
@@ -140,49 +140,49 @@ export async function buildSystemPrompt(options: SystemPromptOptions) {
 
 Agent 工作區支援以下特殊檔案：
 
-| 檔案 | 用途 |
-|------|------|
-| `AGENTS.md` | Agent 指示與行為規則 |
-| `SOUL.md` | 個性描述 |
-| `BOOTSTRAP.md` / `BOOT.md` | 啟動指令 |
-| `IDENTITY.md` | 身份設定 |
-| `USER.md` | 使用者資訊 |
-| `TOOLS.md` | 工具使用指引 |
+| 檔案                       | 用途                 |
+| -------------------------- | -------------------- |
+| `AGENTS.md`                | Agent 指示與行為規則 |
+| `SOUL.md`                  | 個性描述             |
+| `BOOTSTRAP.md` / `BOOT.md` | 啟動指令             |
+| `IDENTITY.md`              | 身份設定             |
+| `USER.md`                  | 使用者資訊           |
+| `TOOLS.md`                 | 工具使用指引         |
 
 ## 核心工具
 
 ### 工具清單
 
-| 工具 | 說明 |
-|------|------|
-| `exec` | 執行 Shell 命令 |
-| `read` | 讀取檔案 |
-| `write` | 寫入檔案 |
-| `edit` | 編輯檔案（patch） |
-| `list` | 列出目錄 |
-| `search` | 搜尋檔案 |
-| `glob` | 模式匹配搜尋 |
-| `browser` | 瀏覽器控制 |
-| `web_search` | 網路搜尋 |
-| `fetch` | HTTP 請求 |
-| `node.*` | 裝置能力（相機、位置等） |
-| `canvas` | Canvas A2UI |
-| `cron` | 排程任務 |
-| `sessions` | 會話管理 |
-| `diffs` | 差異渲染（before/after 或 unified patch，支援 PDF 輸出、品質自訂 `fileQuality`/`fileScale`/`fileMaxWidth`） |
-| `pdf` | PDF 文件分析（原生 Anthropic/Google 支援，非原生自動降級） |
-| `agents_list` | 代理清單 |
-| `message` | 訊息發送 |
-| `gateway` | Gateway 操作 |
+| 工具          | 說明                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `exec`        | 執行 Shell 命令                                                                                             |
+| `read`        | 讀取檔案                                                                                                    |
+| `write`       | 寫入檔案                                                                                                    |
+| `edit`        | 編輯檔案（patch）                                                                                           |
+| `list`        | 列出目錄                                                                                                    |
+| `search`      | 搜尋檔案                                                                                                    |
+| `glob`        | 模式匹配搜尋                                                                                                |
+| `browser`     | 瀏覽器控制                                                                                                  |
+| `web_search`  | 網路搜尋                                                                                                    |
+| `fetch`       | HTTP 請求                                                                                                   |
+| `node.*`      | 裝置能力（相機、位置等）                                                                                    |
+| `canvas`      | Canvas A2UI                                                                                                 |
+| `cron`        | 排程任務                                                                                                    |
+| `sessions`    | 會話管理                                                                                                    |
+| `diffs`       | 差異渲染（before/after 或 unified patch，支援 PDF 輸出、品質自訂 `fileQuality`/`fileScale`/`fileMaxWidth`） |
+| `pdf`         | PDF 文件分析（原生 Anthropic/Google 支援，非原生自動降級）                                                  |
+| `agents_list` | 代理清單                                                                                                    |
+| `message`     | 訊息發送                                                                                                    |
+| `gateway`     | Gateway 操作                                                                                                |
 
 ### 工具配置檔
 
-| 配置檔 | 包含工具 |
-|--------|---------|
-| `minimal` | 基本檔案操作 |
-| `coding` | 檔案 + exec + search |
+| 配置檔      | 包含工具                                     |
+| ----------- | -------------------------------------------- |
+| `minimal`   | 基本檔案操作                                 |
+| `coding`    | 檔案 + exec + search                         |
 | `messaging` | 頻道互動（新安裝預設值，含 Onboarding 預設） |
-| `full` | 所有工具 |
+| `full`      | 所有工具                                     |
 
 > **注意**：自 2026-03-03 起，新安裝的 `tools.profile` 預設改為 `messaging`。需要 coding/system 工具需明確配置。
 
@@ -192,10 +192,10 @@ Agent 工作區支援以下特殊檔案：
 {
   tools: {
     byProvider: {
-      "anthropic": ["exec", "read", "write", "browser"],
-      "ollama": ["read", "write"]
-    }
-  }
+      anthropic: ["exec", "read", "write", "browser"],
+      ollama: ["read", "write"],
+    },
+  },
 }
 ```
 
@@ -218,8 +218,8 @@ export interface ToolPolicy {
 ```typescript
 const sandbox: SandboxOptions = {
   workdir: options.workspaceDir,
-  allowedPaths: [options.workspaceDir, '/tmp'],
-  deniedCommands: ['rm -rf /', 'sudo'],
+  allowedPaths: [options.workspaceDir, "/tmp"],
+  deniedCommands: ["rm -rf /", "sudo"],
   timeout: 30000,
 };
 ```
@@ -228,21 +228,21 @@ const sandbox: SandboxOptions = {
 
 ### 支援的提供者
 
-| 提供者 | 模型 |
-|--------|------|
-| Anthropic | Claude 4.6（預設 adaptive thinking）、Claude Opus/Sonnet/Haiku 4.5 |
-| OpenAI | GPT-4o, GPT-5.2（預設 WebSocket 串流；`transport: "auto"`，SSE 降級） |
-| Mistral | Mistral 模型 |
-| Ollama | Llama 3.3, Qwen 2.5, DeepSeek R1 等 |
-| OpenRouter | 多種模型（x-ai/grok 自動跳過 `reasoning.effort` 注入） |
-| Together AI | Llama、DeepSeek、Kimi 等開源模型 |
-| Bedrock | Claude (AWS)（包含 Bedrock Claude 4.6 refs） |
-| Qwen | 通義千問 |
-| xAI | Grok |
-| MiniMax | MiniMax Portal（OAuth 認證）；支援 `MiniMax-M2.5-highspeed` |
+| 提供者        | 模型                                                                        |
+| ------------- | --------------------------------------------------------------------------- |
+| Anthropic     | Claude 4.6（預設 adaptive thinking）、Claude Opus/Sonnet/Haiku 4.5          |
+| OpenAI        | GPT-4o, GPT-5.2（預設 WebSocket 串流；`transport: "auto"`，SSE 降級）       |
+| Mistral       | Mistral 模型                                                                |
+| Ollama        | Llama 3.3, Qwen 2.5, DeepSeek R1 等                                         |
+| OpenRouter    | 多種模型（x-ai/grok 自動跳過 `reasoning.effort` 注入）                      |
+| Together AI   | Llama、DeepSeek、Kimi 等開源模型                                            |
+| Bedrock       | Claude (AWS)（包含 Bedrock Claude 4.6 refs）                                |
+| Qwen          | 通義千問                                                                    |
+| xAI           | Grok                                                                        |
+| MiniMax       | MiniMax Portal（OAuth 認證）；支援 `MiniMax-M2.5-highspeed`                 |
 | Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`） |
-| Copilot | Copilot Proxy（支援 token 過期自動重新整理） |
-| Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout |
+| Copilot       | Copilot Proxy（支援 token 過期自動重新整理）                                |
+| Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout         |
 
 ### 模型配置
 
@@ -252,17 +252,14 @@ const sandbox: SandboxOptions = {
     defaults: {
       model: {
         primary: "anthropic/claude-sonnet-4-5",
-        fallbacks: [
-          "anthropic/claude-opus-4-5",
-          "ollama/qwen2.5-coder:32b"
-        ]
+        fallbacks: ["anthropic/claude-opus-4-5", "ollama/qwen2.5-coder:32b"],
       },
       models: {
         "anthropic/claude-opus-4-5": { alias: "Opus" },
-        "anthropic/claude-sonnet-4-5": { alias: "Sonnet" }
-      }
-    }
-  }
+        "anthropic/claude-sonnet-4-5": { alias: "Sonnet" },
+      },
+    },
+  },
 }
 ```
 
@@ -324,6 +321,7 @@ interface Session {
 ### 上下文壓縮 (Compaction)
 
 當對話過長時，系統自動執行 compaction：
+
 - 保留最近訊息
 - 摘要舊訊息
 - 只計算已完成的自動壓縮次數
@@ -345,9 +343,9 @@ Claude 4.6 模型（包含 Bedrock Claude 4.6 refs）預設使用 `adaptive` 思
 {
   agents: {
     defaults: {
-      thinking: "adaptive"  // adaptive | low | off
-    }
-  }
+      thinking: "adaptive", // adaptive | low | off
+    },
+  },
 }
 ```
 
@@ -391,12 +389,12 @@ OpenClaw 支援完整的子代理系統，允許 Agent 生成並管理其他 Age
           archiveAfterMinutes: 60,
           tools: {
             allow: ["read", "write", "exec"],
-            deny: ["browser"]
-          }
-        }
-      }
-    }
-  }
+            deny: ["browser"],
+          },
+        },
+      },
+    },
+  },
 }
 ```
 
@@ -406,19 +404,20 @@ OpenClaw 支援完整的子代理系統，允許 Agent 生成並管理其他 Age
 
 ```typescript
 const myTool: Tool = {
-  name: 'my_tool',
-  description: 'My custom tool',
+  name: "my_tool",
+  description: "My custom tool",
   parameters: Type.Object({
     param1: Type.String(),
     param2: Type.Optional(Type.Number()),
   }),
   execute: async (params, context) => {
-    return { result: '...' };
+    return { result: "..." };
   },
 };
 ```
 
 **工具 Schema 注意事項**：
+
 - 避免 `Type.Union`；使用 `stringEnum`/`optionalStringEnum` 代替
 - 頂層 schema 必須是 `type: "object"` 搭配 `properties`
 - 使用 `Type.Optional(...)` 而非 `... | null`
@@ -427,6 +426,7 @@ const myTool: Tool = {
 ## 模型失敗降級
 
 Agent 系統支援多層降級策略：
+
 - **網路錯誤降級**: `ECONNREFUSED`、`ENETUNREACH`、`EHOSTUNREACH`、`ENETRESET`、`EAI_AGAIN` 觸發 fallback
 - **速率限制分類**: 精確匹配 TPM 作為獨立 token/片語，避免子字串誤判
 - **認證過期重試**: Copilot token 過期後自動刷新並重新執行
@@ -444,11 +444,11 @@ Agent 系統支援多層降級策略：
 {
   agents: {
     defaults: {
-      pdfModel: "anthropic/claude-sonnet-4-5",  // PDF 分析首選模型
-      pdfMaxBytesMb: 10,                          // 最大 PDF 大小（MB）
-      pdfMaxPages: 50                             // 最大頁數
-    }
-  }
+      pdfModel: "anthropic/claude-sonnet-4-5", // PDF 分析首選模型
+      pdfMaxBytesMb: 10, // 最大 PDF 大小（MB）
+      pdfMaxPages: 50, // 最大頁數
+    },
+  },
 }
 ```
 
@@ -459,27 +459,28 @@ Agent 系統支援多層降級策略：
   tools: {
     media: {
       audio: {
-        echoTranscript: true,        // 在代理處理前向聊天發送轉錄
-        echoFormat: "blockquote"     // plain | blockquote | code
-      }
-    }
-  }
+        echoTranscript: true, // 在代理處理前向聊天發送轉錄
+        echoFormat: "blockquote", // plain | blockquote | code
+      },
+    },
+  },
 }
 ```
 
 ## sessions_spawn 內聯附件
 
 子代理執行時可傳遞內聯檔案附件：
+
 ```json5
 {
   tools: {
     sessions_spawn: {
       attachments: {
-        maxSizeBytes: 1048576,  // 每附件最大大小（bytes）
-        maxCount: 5             // 最大附件數
-      }
-    }
-  }
+        maxSizeBytes: 1048576, // 每附件最大大小（bytes）
+        maxCount: 5, // 最大附件數
+      },
+    },
+  },
 }
 ```
 
@@ -488,9 +489,9 @@ Agent 系統支援多層降級策略：
 ```json5
 {
   memorySearch: {
-    provider: "ollama",     // 使用 Ollama 作為嵌入向量提供者
-    fallback: "ollama"      // 嵌入 fallback 也使用 Ollama
-  }
+    provider: "ollama", // 使用 Ollama 作為嵌入向量提供者
+    fallback: "ollama", // 嵌入 fallback 也使用 Ollama
+  },
 }
 ```
 
@@ -499,17 +500,18 @@ Agent 系統支援多層降級策略：
 ## 記憶沖洗強制預壓縮
 
 防止長對話在 token 快照過期時卡住：
+
 ```json5
 {
   agents: {
     defaults: {
       compaction: {
         memoryFlush: {
-          forceFlushTranscriptBytes: 2097152  // 2MB，預設值
-        }
-      }
-    }
-  }
+          forceFlushTranscriptBytes: 2097152, // 2MB，預設值
+        },
+      },
+    },
+  },
 }
 ```
 
@@ -521,18 +523,18 @@ Agent 系統支援多層降級策略：
 {
   tools: {
     loopDetection: {
-      enabled: false,              // 啟用偵測
-      historySize: 30,             // 追蹤歷史大小
-      warningThreshold: 10,        // 警告門檻
-      criticalThreshold: 20,       // 嚴重門檻
+      enabled: false, // 啟用偵測
+      historySize: 30, // 追蹤歷史大小
+      warningThreshold: 10, // 警告門檻
+      criticalThreshold: 20, // 嚴重門檻
       globalCircuitBreakerThreshold: 30, // 全域斷路器
       detectors: {
-        genericRepeat: true,       // 通用重複偵測
+        genericRepeat: true, // 通用重複偵測
         knownPollNoProgress: true, // 已知輪詢無進展
-        pingPong: true             // 乒乓模式
-      }
-    }
-  }
+        pingPong: true, // 乒乓模式
+      },
+    },
+  },
 }
 ```
 
@@ -548,9 +550,9 @@ Agent 系統支援多層降級策略：
 {
   agents: {
     defaults: {
-      bootstrapPromptTruncationWarning: "once"  // off | once | always
-    }
-  }
+      bootstrapPromptTruncationWarning: "once", // off | once | always
+    },
+  },
 }
 ```
 
@@ -559,6 +561,7 @@ Agent 系統支援多層降級策略：
 ## Hooks 訊息生命週期
 
 新增的 hook 事件：
+
 - `message:transcribed` — 音頻轉錄完成後觸發
 - `message:preprocessed` — 訊息前處理完成後觸發
 - `message:sent` — 新增 `isGroup`（是否為群組）、`groupId`（群組 ID）欄位
@@ -568,29 +571,29 @@ Agent 系統支援多層降級策略：
 
 `web_search` 工具支援以下提供者（自動偵測順序：Brave → Gemini → Kimi → Perplexity → Grok）：
 
-| 提供者 | 特色 |
-|--------|------|
+| 提供者                | 特色                                       |
+| --------------------- | ------------------------------------------ |
 | Perplexity Search API | 結構化結果 + 語言/地區/時間篩選 + 內容提取 |
-| Brave Search | 快速結構化結果 |
-| Gemini | Google Search grounding |
-| Grok | xAI web-grounded 回應 |
-| Kimi | Moonshot web search |
+| Brave Search          | 快速結構化結果                             |
+| Gemini                | Google Search grounding                    |
+| Grok                  | xAI web-grounded 回應                      |
+| Kimi                  | Moonshot web search                        |
 
 ```json5
 {
   tools: {
     web: {
       search: {
-        provider: "perplexity",           // 明確指定提供者
+        provider: "perplexity", // 明確指定提供者
         perplexity: {
           apiKey: "${PERPLEXITY_API_KEY}",
-          searchLanguage: "zh-TW",        // 搜尋語言
-          searchRegion: "TW",             // 搜尋地區
-          searchRecency: "week"           // 時間範圍：day | week | month | year
-        }
-      }
-    }
-  }
+          searchLanguage: "zh-TW", // 搜尋語言
+          searchRegion: "TW", // 搜尋地區
+          searchRecency: "week", // 時間範圍：day | week | month | year
+        },
+      },
+    },
+  },
 }
 ```
 
