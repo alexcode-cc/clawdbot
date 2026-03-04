@@ -187,7 +187,7 @@ interface RpcEvent {
   success: true,
   result: {
     status: 'healthy',
-    version: '2026.3.2',
+    version: '2026.3.3',
     uptime: 3600,
     memory: { used: 128000000, total: 512000000 }
   }
@@ -283,9 +283,27 @@ Gateway 提供內建 HTTP 健康檢查端點，適用於 Docker/Kubernetes：
 |------|------|
 | `message:transcribed` | 音頻轉錄完成後觸發 |
 | `message:preprocessed` | 訊息前處理完成後觸發 |
-| `message:sent` | 訊息發送後觸發（新增 `isGroup`、`groupId` 欄位） |
+| `message:sent` | 訊息發送後觸發（含 `isGroup`、`groupId`、`mediaUrls`、`threadId`） |
+| `message_sending` | 訊息發送前觸發（Telegram 回覆路徑也支援） |
+| `session_start` | Session 啟動時觸發（含 `sessionKey`） |
+| `session_end` | Session 結束時觸發（含 `sessionKey`） |
 | `before_tool_call` | 工具執行前（包含 `sessionId`、`sessionKey`、`agentId`） |
 | `after_tool_call` | 工具執行後（每次工具執行觸發一次） |
+
+### Plugin SDK 匯入子路徑
+
+| 子路徑 | 用途 |
+|--------|------|
+| `openclaw/plugin-sdk/core` | 通用外掛 API、provider auth types、共用 helpers |
+| `openclaw/plugin-sdk/telegram` | Telegram 頻道外掛 |
+| `openclaw/plugin-sdk/discord` | Discord 頻道外掛 |
+| `openclaw/plugin-sdk/slack` | Slack 頻道外掛 |
+| `openclaw/plugin-sdk/signal` | Signal 頻道外掛 |
+| `openclaw/plugin-sdk/imessage` | iMessage 頻道外掛 |
+| `openclaw/plugin-sdk/whatsapp` | WhatsApp 頻道外掛 |
+| `openclaw/plugin-sdk/line` | LINE 頻道外掛 |
+
+> `openclaw/plugin-sdk` 根匯入仍支援，確保現有外部外掛不受影響。
 
 ## Plugin SDK API
 
@@ -317,6 +335,20 @@ interface PluginRuntime {
   stt: {
     /** 透過 OpenClaw 配置的媒體理解提供者轉錄本地音頻檔案 */
     transcribeAudioFile(filePath: string, opts?: SttOptions): Promise<string>;
+  };
+  tts: {
+    /** 電話通話用 TTS（PCM 音頻 + 取樣率） */
+    textToSpeechTelephony(opts: { text: string; cfg: Config }): Promise<TtsResult>;
+  };
+  system: {
+    /** 立即喚醒目標 session 心跳 */
+    requestHeartbeatNow(sessionKey: string): void;
+  };
+  events: {
+    /** 訂閱 agent 事件 */
+    onAgentEvent(handler: AgentEventHandler): Unsubscribe;
+    /** 訂閱 transcript 更新（隔離失敗 listener） */
+    onSessionTranscriptUpdate(handler: TranscriptHandler): Unsubscribe;
   };
 }
 ```
