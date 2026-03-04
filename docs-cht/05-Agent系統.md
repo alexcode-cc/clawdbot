@@ -169,7 +169,7 @@ Agent 工作區支援以下特殊檔案：
 | `canvas` | Canvas A2UI |
 | `cron` | 排程任務 |
 | `sessions` | 會話管理 |
-| `diffs` | 差異渲染（before/after 或 unified patch，支援 PDF 輸出） |
+| `diffs` | 差異渲染（before/after 或 unified patch，支援 PDF 輸出、品質自訂 `fileQuality`/`fileScale`/`fileMaxWidth`） |
 | `pdf` | PDF 文件分析（原生 Anthropic/Google 支援，非原生自動降級） |
 | `agents_list` | 代理清單 |
 | `message` | 訊息發送 |
@@ -181,7 +181,7 @@ Agent 工作區支援以下特殊檔案：
 |--------|---------|
 | `minimal` | 基本檔案操作 |
 | `coding` | 檔案 + exec + search |
-| `messaging` | 頻道互動（新安裝預設值） |
+| `messaging` | 頻道互動（新安裝預設值，含 Onboarding 預設） |
 | `full` | 所有工具 |
 
 > **注意**：自 2026-03-03 起，新安裝的 `tools.profile` 預設改為 `messaging`。需要 coding/system 工具需明確配置。
@@ -483,6 +483,19 @@ Agent 系統支援多層降級策略：
 }
 ```
 
+## 記憶搜尋 Ollama 嵌入
+
+```json5
+{
+  memorySearch: {
+    provider: "ollama",     // 使用 Ollama 作為嵌入向量提供者
+    fallback: "ollama"      // 嵌入 fallback 也使用 Ollama
+  }
+}
+```
+
+尊重 `models.providers.ollama` 設定。
+
 ## 記憶沖洗強制預壓縮
 
 防止長對話在 token 快照過期時卡住：
@@ -500,9 +513,91 @@ Agent 系統支援多層降級策略：
 }
 ```
 
+## 工具迴圈偵測
+
+可選的護欄，防止 agent 卡在重複工具呼叫迴圈中。預設**停用**。
+
+```json5
+{
+  tools: {
+    loopDetection: {
+      enabled: false,              // 啟用偵測
+      historySize: 30,             // 追蹤歷史大小
+      warningThreshold: 10,        // 警告門檻
+      criticalThreshold: 20,       // 嚴重門檻
+      globalCircuitBreakerThreshold: 30, // 全域斷路器
+      detectors: {
+        genericRepeat: true,       // 通用重複偵測
+        knownPollNoProgress: true, // 已知輪詢無進展
+        pingPong: true             // 乒乓模式
+      }
+    }
+  }
+}
+```
+
+支援 per-agent 覆寫（`agents.list[].tools.loopDetection`）。
+
+## 工具結果截斷
+
+對過大的工具結果使用 head+tail 截斷，保留重要的尾部診斷資訊，同時保持可配置的截斷選項。
+
+## Bootstrap 截斷警告
+
+```json5
+{
+  agents: {
+    defaults: {
+      bootstrapPromptTruncationWarning: "once"  // off | once | always
+    }
+  }
+}
+```
+
+統一 bootstrap 預算/截斷分析（embedded + CLI runtime、`/context`、`openclaw doctor`），持久化警告簽名元資料，確保截斷警告跨 turn 一致且不重複。
+
 ## Hooks 訊息生命週期
 
 新增的 hook 事件：
 - `message:transcribed` — 音頻轉錄完成後觸發
 - `message:preprocessed` — 訊息前處理完成後觸發
 - `message:sent` — 新增 `isGroup`（是否為群組）、`groupId`（群組 ID）欄位
+- `session_start` / `session_end` — 新增 `sessionKey` 欄位供路由身份關聯
+
+## Web 搜尋提供者
+
+`web_search` 工具支援以下提供者（自動偵測順序：Brave → Gemini → Kimi → Perplexity → Grok）：
+
+| 提供者 | 特色 |
+|--------|------|
+| Perplexity Search API | 結構化結果 + 語言/地區/時間篩選 + 內容提取 |
+| Brave Search | 快速結構化結果 |
+| Gemini | Google Search grounding |
+| Grok | xAI web-grounded 回應 |
+| Kimi | Moonshot web search |
+
+```json5
+{
+  tools: {
+    web: {
+      search: {
+        provider: "perplexity",           // 明確指定提供者
+        perplexity: {
+          apiKey: "${PERPLEXITY_API_KEY}",
+          searchLanguage: "zh-TW",        // 搜尋語言
+          searchRegion: "TW",             // 搜尋地區
+          searchRecency: "week"           // 時間範圍：day | week | month | year
+        }
+      }
+    }
+  }
+}
+```
+
+## Compaction 擴充
+
+壓縮交接指示已擴展，保留活動任務狀態、批次進度、最新使用者請求和後續承諾，確保壓縮後保留進行中的工作上下文。
+
+## Session 日期校準
+
+啟動/post-compaction 的 AGENTS context 中 `YYYY-MM-DD` 佔位符會替換為實際日期，`/new` 和 `/reset` 提示追加執行時當前時間行。
