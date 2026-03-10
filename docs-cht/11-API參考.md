@@ -187,7 +187,7 @@ interface RpcEvent {
   success: true,
   result: {
     status: 'healthy',
-    version: '2026.3.3',
+    version: '2026.3.9',
     uptime: 3600,
     memory: { used: 128000000, total: 512000000 }
   }
@@ -289,6 +289,9 @@ Gateway 提供內建 HTTP 健康檢查端點，適用於 Docker/Kubernetes：
 | `session_end` | Session 結束時觸發（含 `sessionKey`） |
 | `before_tool_call` | 工具執行前（包含 `sessionId`、`sessionKey`、`agentId`） |
 | `after_tool_call` | 工具執行後（每次工具執行觸發一次） |
+| `compaction:start` | 壓縮開始時觸發 |
+| `compaction:end` | 壓縮完成時觸發 |
+| `before_prompt_build` | 支援 `prependSystemContext` / `appendSystemContext` 注入 |
 
 ### Plugin SDK 匯入子路徑
 
@@ -302,8 +305,11 @@ Gateway 提供內建 HTTP 健康檢查端點，適用於 Docker/Kubernetes：
 | `openclaw/plugin-sdk/imessage` | iMessage 頻道外掛 |
 | `openclaw/plugin-sdk/whatsapp` | WhatsApp 頻道外掛 |
 | `openclaw/plugin-sdk/line` | LINE 頻道外掛 |
+| `openclaw/plugin-sdk/channel` | 頻道共用外掛 SDK |
+| `openclaw/plugin-sdk/allowlist` | Allowlist 解析工具 |
+| `openclaw/plugin-sdk/resolve-target` | 目標解析工具 |
 
-> `openclaw/plugin-sdk` 根匯入仍支援，確保現有外部外掛不受影響。
+> `openclaw/plugin-sdk` 根匯入仍支援（透過 root-alias shim lazily load），確保現有外部外掛不受影響。
 
 ## Plugin SDK API
 
@@ -350,6 +356,8 @@ interface PluginRuntime {
     /** 訂閱 transcript 更新（隔離失敗 listener） */
     onSessionTranscriptUpdate(handler: TranscriptHandler): Unsubscribe;
   };
+  /** Model auth API（context-engine plugins 可用） */
+  modelAuth?: ModelAuthApi;
 }
 ```
 

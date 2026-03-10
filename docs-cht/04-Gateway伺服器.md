@@ -343,6 +343,48 @@ Gateway 支援完整的 SecretRef 機制，涵蓋 64 個使用者提供的憑證
 
 `listConfiguredAgentIds` 現在也包含磁碟掃描的 agent IDs（即使 `agents.list` 已配置），確保磁碟上的 ACP agent session 在 session 聚合和列表中可見。
 
+## Gateway Auth SecretRef
+
+`gateway.auth.token` 現支援 SecretRef 引用，並加入 auth-mode guardrails：
+
+```json5
+{
+  gateway: {
+    auth: {
+      token: { "$ref": "secret:gateway-token" }
+    }
+  }
+}
+```
+
+## Gateway 密碼檔案輸入
+
+`gateway run` 新增 `--password-file` 選項：
+
+```bash
+openclaw gateway run --password-file /path/to/password
+```
+
+## Channel-Backed Readiness Probes
+
+Gateway 新增 channel-backed readiness probes，可透過頻道連線狀態判斷就緒：
+
+```bash
+openclaw channels status --probe
+```
+
+## Node Pending 機制
+
+Gateway 新增 pending node work primitives 和 tightened drain semantics，確保節點工作在 Gateway 停止前完成排空。
+
+## 啟動穩定性改善
+
+- 啟動失敗在 run loop 中捕捉，防止 process exit
+- 重啟前驗證 config 防止 crash 和 macOS 權限遺失
+- 重啟 shutdown timeout 時 exit non-zero
+- 非管理的 listeners 停止並重啟
+- Config 無效載入 fail-closed
+
 ## 安全考量
 
 1. **Token 認證**: 客戶端需提供有效 Token

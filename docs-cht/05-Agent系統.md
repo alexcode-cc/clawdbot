@@ -231,7 +231,7 @@ const sandbox: SandboxOptions = {
 | 提供者        | 模型                                                                        |
 | ------------- | --------------------------------------------------------------------------- |
 | Anthropic     | Claude 4.6（預設 adaptive thinking）、Claude Opus/Sonnet/Haiku 4.5          |
-| OpenAI        | GPT-4o, GPT-5.2（預設 WebSocket 串流；`transport: "auto"`，SSE 降級）       |
+| OpenAI        | GPT-4o, GPT-5.2, GPT-5.4（預設 WebSocket 串流；`transport: "auto"`，SSE 降級，1M context） |
 | Mistral       | Mistral 模型                                                                |
 | Ollama        | Llama 3.3, Qwen 2.5, DeepSeek R1 等                                         |
 | OpenRouter    | 多種模型（x-ai/grok 自動跳過 `reasoning.effort` 注入）                      |
@@ -240,7 +240,10 @@ const sandbox: SandboxOptions = {
 | Qwen          | 通義千問                                                                    |
 | xAI           | Grok                                                                        |
 | MiniMax       | MiniMax Portal（OAuth 認證）；支援 `MiniMax-M2.5-highspeed`                 |
-| Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`） |
+| Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`）；含 Gemini 3.1 Flash-Lite |
+| Vercel AI     | Vercel AI Gateway catalog 自動發現                                          |
+| Venice        | 預設 kimi-k2-5，發現限制和工具支援強化                                       |
+| Kilocode      | 所有模型可用                                                                |
 | Copilot       | Copilot Proxy（支援 token 過期自動重新整理）                                |
 | Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout         |
 
@@ -574,7 +577,7 @@ Agent 系統支援多層降級策略：
 | 提供者                | 特色                                       |
 | --------------------- | ------------------------------------------ |
 | Perplexity Search API | 結構化結果 + 語言/地區/時間篩選 + 內容提取 |
-| Brave Search          | 快速結構化結果                             |
+| Brave Search          | 快速結構化結果 + LLM Context API 模式      |
 | Gemini                | Google Search grounding                    |
 | Grok                  | xAI web-grounded 回應                      |
 | Kimi                  | Moonshot web search                        |
@@ -600,6 +603,58 @@ Agent 系統支援多層降級策略：
 ## Compaction 擴充
 
 壓縮交接指示已擴展，保留活動任務狀態、批次進度、最新使用者請求和後續承諾，確保壓縮後保留進行中的工作上下文。
+
+### Compaction 模型覆寫
+
+可使用獨立模型進行壓縮：
+
+```json5
+{
+  agents: {
+    defaults: {
+      compaction: {
+        model: "anthropic/claude-sonnet-4-5"
+      }
+    }
+  }
+}
+```
+
+### Compaction Safeguard 品質控制
+
+- **preserve/quality 設定**：可配置壓縮後保留的上下文區段和品質等級
+- **摘要品質審計重試**：壓縮摘要觸發自動重試確保品質
+- **結構化摘要標題要求**：強制壓縮摘要使用結構化標題
+- **Post-compaction 上下文區段配置**：可自訂壓縮後的上下文區段
+
+### Compaction 生命週期 Hooks
+
+```
+compaction:start  — 壓縮開始
+compaction:end    — 壓縮完成
+```
+
+可在 `before_prompt_build` 中使用 `prependSystemContext` 和 `appendSystemContext` 注入自訂上下文。
+
+### Compaction 穩定性改善
+
+- 壓縮重試等待加入邊界，重啟時排空 embedded runs
+- 壓縮閾值套用 contextTokens cap
+- 無真實訊息時跳過壓縮 API call
+- `model_context_window_exceeded` 分類為 context overflow 並觸發壓縮
+- Reply pipeline 在壓縮等待前沖洗
+
+## Billing / Rate Limit 分類
+
+- 單提供者 billing cooldown 探測
+- 402 temporary-limit 偵測擴展
+- `insufficient_quota` 400 分類為 billing
+- Generic cooldown text 避免 false global rate-limit 分類
+- Service-unavailable 窄化至需要 overload indicator
+- Auth cooldown error counters 到期重設
+- HTTP 499 加入 transient error codes（模型 fallback）
+- zhipuai 1310 Weekly/Monthly Limit failover
+- Rate limit patterns 新增 'too many tokens' 和 'tokens per day'
 
 ## Session 日期校準
 
