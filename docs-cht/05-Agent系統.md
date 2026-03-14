@@ -246,6 +246,9 @@ const sandbox: SandboxOptions = {
 | Kilocode      | 所有模型可用                                                                |
 | Copilot       | Copilot Proxy（支援 token 過期自動重新整理）                                |
 | Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout         |
+| Opencode Go   | Opencode Go provider                                                       |
+| ModelStudio   | 阿里巴巴百煉 Coding Plan（原 Bailian）                                     |
+| Poe           | Poe 模型（402 'used up your points' billing 識別）                          |
 
 ### 模型配置
 
@@ -659,3 +662,61 @@ compaction:end    — 壓縮完成
 ## Session 日期校準
 
 啟動/post-compaction 的 AGENTS context 中 `YYYY-MM-DD` 佔位符會替換為實際日期，`/new` 和 `/reset` 提示追加執行時當前時間行。
+
+## Fast Mode（2026.3.12+）
+
+session-level 快速模式切換，支援 Anthropic 和 OpenAI：
+
+- **OpenAI**: 透過 `/fast`、TUI、Control UI、ACP 切換，per-model config defaults 和 request shaping
+- **Anthropic**: 映射至 API `service_tier` 請求，即時驗證
+
+```json5
+{
+  agents: {
+    defaults: {
+      params: {
+        fastMode: true, // 啟用 fast mode
+      }
+    }
+  }
+}
+```
+
+## Sessions Yield（2026.3.12+）
+
+新增 `sessions_yield` 工具，讓 orchestrator 可以：
+- 立即結束當前 turn
+- 跳過排隊的 tool work
+- 攜帶隱藏的 follow-up payload 進入下一個 session turn
+
+## Provider Plugin 架構（2026.3.12+）
+
+Ollama、vLLM、SGLang 遷移至 provider-plugin 架構：
+- Provider 擁有自己的 onboarding、discovery、model-picker setup、post-selection hooks
+- 核心 provider wiring 更加模組化
+- 支援非互動式 provider plugin setup
+
+## Compaction 改善（2026.3.13+）
+
+- Token 計數比較使用全 session pre-compaction totals
+- Safeguard 壓縮摘要語言連續性保持（persona drift 減少）
+- 壓縮期間顯示狀態 reaction
+- Image-only tool-result 修剪支援
+
+## Billing / Rate Limit 改善（2026.3.13+）
+
+- Venice 402 billing error 識別
+- Poe 402 'used up your points' 識別
+- OpenRouter HTTP 422 分類為 format，credits 分類為 billing
+- Gemini MALFORMED_RESPONSE 分類為可重試的 timeout
+- 避免同一 provider 的重複 cooldown probes
+- 在 context overflow 啟發式之前檢查 billing errors
+- 防止 false billing error 取代有效回應文字
+
+## 記憶改善（2026.3.13+）
+
+- Gemini Embedding 2 Preview 支援
+- Gemini embeddings 正規化
+- 多模態圖片和音訊索引
+- Bootstrap 載入偏好 MEMORY.md（fallback memory.md）
+- Case-insensitive Docker mounts 不再注入重複記憶
