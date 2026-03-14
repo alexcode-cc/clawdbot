@@ -98,7 +98,7 @@
 | 作業系統 | macOS 15.0+（Sequoia）或 macOS 13.0+ |
 | 處理器 | Apple M4（arm64） |
 | RAM | 24 GB 統一記憶體 |
-| Node.js | >= 22.12.0 |
+| Node.js | >= 22.16.0 |
 | 儲存空間 | 建議 50 GB 以上可用空間（存放模型檔案） |
 | 網路 | 需要穩定的網際網路連線 |
 
@@ -145,7 +145,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.3.9 或更新版本
+# 應顯示 2026.3.13 或更新版本
 ```
 
 ### 方法 B：使用 npm 全域安裝
