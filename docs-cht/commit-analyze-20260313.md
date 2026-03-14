@@ -189,15 +189,113 @@ Mattermost 新增 `replyToMode` 配置選項，可控制回覆的串接行為。
 
 ---
 
-### 2.12 其他新功能
+### 2.12 阿里巴巴 Model Studio（百煉 Coding Plan）
+
+```
+feat: integrate Alibaba Bailian Coding Plan into onboarding wizard
+refactor: rename bailian to modelstudio and fix review issues
+fix: wire modelstudio env discovery (#40634)
+```
+
+阿里巴巴雲 Model Studio（原內部代號 Bailian）作為新的 LLM 提供者整合至 OpenClaw，提供透過 DashScope API 存取通義千問等模型的能力。
+
+**提供者 ID**：`modelstudio`（從 `bailian` 重新命名為官方英文名稱）
+
+**API 端點**：
+- 中國區：`https://coding.dashscope.aliyuncs.com/v1`
+- 國際區：`https://coding-intl.dashscope.aliyuncs.com/v1`
+
+**支援的模型目錄**：
+
+| 模型 | Context Window | 最大 Tokens | 輸入類型 |
+|------|---------------|-------------|---------|
+| `qwen3.5-plus`（預設） | 1M | 65k | 文字 + 圖片 |
+| `qwen3-max-2026-01-23` | 262k | — | 文字 |
+| `qwen3-coder-next` | 262k | — | 文字 |
+| `qwen3-coder-plus` | 1M | — | 文字 |
+| `MiniMax-M2.5` | 1M | — | 文字 |
+| `glm-5` / `glm-4.7` | 202k | — | 文字 |
+| `kimi-k2.5` | 262k | — | 文字 + 圖片 |
+
+**Onboarding 整合**：在引導精靈中新增 `--auth-choice modelstudio-api-key`（國際區）和 `--auth-choice modelstudio-api-key-cn`（中國區）選項，搭配自動 API Key 發現。
+
+**修復**：
+- 國際端點變體現在正確覆寫 baseUrl，不再靜默保留過期的中國區 URL
+- `PROVIDER_ENV_VARS` 新增 modelstudio 條目，修復 `secret-input-mode=ref` 拋出例外的問題
+
+---
+
+### 2.13 OpenRouter Hunter/Healer Stealth 模型
+
+```
+OpenRouter: surface free Hunter and Healer stealth models for the next week (#43642)
+```
+
+OpenRouter 發布的臨時 alpha stealth 模型，在限定期間（約一週）內免費開放使用。這些是進階推理模型，僅透過 OpenRouter API 提供。
+
+| 模型 | ID | 推理能力 | 輸入類型 | Context Window | Max Tokens |
+|------|-----|---------|---------|---------------|------------|
+| Hunter Alpha | `openrouter/hunter-alpha` | 推理啟用 | 文字 | 1M | 64k |
+| Healer Alpha | `openrouter/healer-alpha` | 推理啟用 | 文字 + 圖片 | 256k | 64k |
+
+> **注意**：這些是早期存取的 alpha 模型，可用性受限於 OpenRouter 的推廣期間。
+
+---
+
+### 2.14 Opencode Go 統一路由提供者
+
+```
+Providers: add Opencode Go support (#42313)
+```
+
+Opencode Go 是一個統一路由提供者，將請求轉發至多個相容的基礎模型（Kimi、GLM、MiniMax），透過單一 API 介面存取。補充現有的 Opencode Zen 提供者。
+
+**提供者 ID**：`opencode-go`
+**預設模型**：`opencode-go/kimi-k2.5`
+
+**模型別名**：
+
+| 模型 ID | 顯示名稱 |
+|---------|---------|
+| `opencode-go/kimi-k2.5` | Kimi |
+| `opencode-go/glm-5` | GLM |
+| `opencode-go/minimax-m2.5` | MiniMax |
+
+**Onboarding 整合**：`--auth-choice opencode-go` 搭配 `--opencode-go-api-key`。
+
+---
+
+### 2.15 Gemini Embedding 2 Preview
+
+```
+feat(memory): add gemini-embedding-2-preview support (#42501)
+```
+
+OpenClaw 記憶搜尋系統新增 Google Gemini Embedding 2 Preview 模型支援，用於語意搜尋和上下文管理的向量嵌入。
+
+- **模型 ID**：`gemini-embedding-2-preview`
+- **提供者**：Google（Gemini API）
+- **用途**：文字嵌入，用於記憶語意搜尋和相似度比對
+- **搭配修復**：Gemini embeddings 正規化（#43409），確保嵌入向量品質一致
+
+---
+
+### 2.16 多模態記憶索引
+
+```
+Memory: add multimodal image and audio indexing (#43460)
+Memory: revalidate multimodal files before indexing
+```
+
+記憶系統新增多模態索引能力，支援圖片和音訊檔案的索引與搜尋。索引前會重新驗證多模態檔案的有效性。
+
+---
+
+### 2.17 其他新功能
 
 | 功能 | 說明 | PR |
 |------|------|-----|
 | node-connect skill | 新增 node-connect 技能 | — |
-| Gemini Embedding 2 Preview | 記憶系統新增支援 | #42501 |
-| 阿里巴巴百煉 Coding Plan | 整合 onboarding wizard | — |
-| Opencode Go 支援 | 新增 Opencode Go provider | #42313 |
-| OpenRouter Hunter/Healer | 期間限定免費模型 | #43642 |
 | ACP resumeSessionId | Session resume 支援 | #41847 |
 | Gateway runtime version | 狀態中暴露 runtime 版本 | — |
 | Discord autoArchiveDuration | 新增 config 選項 | #35065 |
@@ -504,24 +602,54 @@ google-gemini-cli-auth **不在** npm 發布清單中。它是 disk-tree only（
 
 ### 6.2 Provider 相容性
 
+#### Kimi / Moonshot 相容性修復
+
+Moonshot API（Kimi）在 thinking 模式啟用時對 tool choice 有嚴格的相容性要求。本次更新修復了多項 payload 格式問題：
+
 | 項目 | 說明 | PR |
 |------|------|-----|
-| Kimi Coding tools | 以原生 Anthropic format 發送 tools | #38669 |
-| Kimi Coding User-Agent | 預設發送 `claude-code/0.1.0` header | #30099 |
-| Kimi Coding baseUrl | 遵從明確的 baseUrl 配置 | #36353 |
-| Moonshot CN API | 遵從 platform.moonshot.cn baseUrl | #33637 |
-| Ollama Kimi Cloud | Moonshot 相容性 wrapper 應用至 Ollama Kimi | #41519 |
-| Ollama 推理可見性 | 停止洩漏 native thinking/reasoning 至回覆 | #45330 |
-| OpenAI Codex Spark | gpt-5.3-codex-spark 相容性維護 | — |
-| Azure OpenAI prompts | 重措 startup instruction 避免 HTTP 400 | #43403 |
-| Venice billing | 辨識 Venice 402 billing errors | #43205 |
-| Poe billing | 辨識 Poe 402 'used up your points' | #42278 |
-| OpenRouter billing | HTTP 422 分類為 format，credits 分類為 billing | #43823 |
-| Gemini MALFORMED_RESPONSE | 分類為可重試的 timeout | #42292 |
-| Gemini PDF URL | 防止 /v1beta 重複 | #34369 |
+| Kimi Coding tools | 恢復以原生 Anthropic format 發送 `tool_use` blocks（不再降級為 XML/plain-text pseudo invocations） | #38669 |
+| Kimi Coding User-Agent | 預設發送 `User-Agent: OpenClaw` header（訂閱模型需要特定識別，保留使用者覆寫能力） | #30099 |
+| Kimi Coding baseUrl | 遵從使用者配置的明確 `baseUrl`，允許 CN 和 global 端點切換 | #36353 |
+| Moonshot CN API | 遵從 `platform.moonshot.cn` 的明確 baseUrl，確保中國區 API Key 正確認證 | #33637 |
+| Ollama Kimi Cloud | 將 Moonshot payload 相容性 wrapper 應用至 Ollama 雲端的 Kimi 模型（如 `kimi-k2.5:cloud`）。偵測邏輯：provider 為 `ollama` + model 以 `kimi-k` 開頭 + model 包含 `:cloud` | #41519 |
+
+**Moonshot Thinking + Tool Choice 規則**：
+- Thinking 啟用時，`tool_choice: "required"` 自動轉換為 `"auto"`
+- 指定工具的 tool choice 會停用 thinking（轉為 `thinking.type: "disabled"`）
+- 支援的 tool choice（thinking 啟用時）：`"auto"`、`"none"`
+
+#### OpenAI Codex Spark 模型限制
+
+`gpt-5.3-codex-spark` 是 OpenAI 的專用 Spark 模型變體，**僅限** OpenAI Codex OAuth provider 使用，不可透過直接 API 存取：
+
+- **正確路徑**：`openai-codex/gpt-5.3-codex-spark`
+- **被抑制的路徑**：`openai/gpt-5.3-codex-spark` 和 `azure-openai-responses/gpt-5.3-codex-spark` 會回傳清楚的錯誤訊息引導使用者
+- **原因**：上游 OpenAI 在直接 API 路徑上拒絕此模型
+
+#### Azure OpenAI 內容過濾器修復
+
+Azure OpenAI 部署的 `/new` 和 `/reset` 指令觸發 HTTP 400 false positive：
+
+- **問題**：`"Execute your Session Startup sequence now"` 被 Azure 內容過濾器標記為潛在有害
+- **修復**：改為 `"Run your Session Startup sequence"`，語意相同但避免觸發過濾器
+- **影響**：所有 Azure OpenAI 使用者的 `/new` 和 `/reset` 指令恢復正常（PR #43403）
+
+#### Billing / Failover 錯誤分類
+
+| 項目 | 說明 | PR |
+|------|------|-----|
+| Venice billing | 辨識 Venice HTTP 402 billing errors，觸發模型 fallback 而非硬失敗 | #43205 |
+| Poe billing | 辨識 Poe HTTP 402 `"used up your points"` 訊息，觸發 fallback。偵測正則：`^\s*402\s+.*used up your points\b` | #42278 |
+| OpenRouter billing | HTTP 422 分類為 format error，credits exhausted 分類為 billing | #43823 |
+| Gemini MALFORMED_RESPONSE | 分類為可重試的 timeout（而非硬失敗） | #42292 |
+| Gemini PDF URL | 防止 `/v1beta` 路徑重複 | #34369 |
 | 重複 cooldown probes | 避免同一 provider 的重複 cooldown probes | #41711 |
-| Billing 錯誤優先 | 在 context overflow 啟發式之前檢查 billing errors | #40409 |
+| Billing 錯誤優先 | 在 context overflow 啟發式之前檢查 billing errors，防止錯誤分類 | #40409 |
 | 有效回應保護 | 防止 false billing error 取代有效回應文字 | #40616 |
+| Ollama 推理可見性 | 停止將 native `thinking`/`reasoning` 欄位洩漏至最終回覆文字 | #45330 |
+
+**Billing 錯誤分類機制**：`classify402Message()` 區分硬性 billing 錯誤（credit/quota 耗盡 → 停止）和暫時性 402 錯誤（rate limit/spend limit 重設 → 可重試 fallback）
 
 ---
 
@@ -663,50 +791,82 @@ google-gemini-cli-auth **不在** npm 發布清單中。它是 disk-tree only（
 
 ## 12. 模型與提供者
 
-### 12.1 新模型/提供者
+### 12.1 Anthropic Fast Mode
 
-| 模型/提供者 | 說明 | PR |
-|------------|------|-----|
-| Anthropic Fast Mode | service_tier 請求支援 | — |
-| OpenAI Fast Mode | session-level toggle | — |
-| Opencode Go | 新增支援 | #42313 |
-| OpenRouter Hunter/Healer | 期間限定免費 stealth 模型 | #43642 |
-| 阿里巴巴 ModelStudio | 整合 Bailian Coding Plan | — |
-| Gemini Embedding 2 | preview 支援 | #42501 |
+透過 Anthropic API 的 `service_tier` 參數實現優先處理推理：
+
+- **Fast Mode ON**：`service_tier: "auto"`（優先推理佇列）
+- **Fast Mode OFF**：`service_tier: "standard_only"`（標準佇列）
+- **適用範圍**：僅限直接 API Key 模型（非 OAuth tokens），僅限公開 Anthropic API（`api.anthropic.com`），不適用於自訂 baseUrl
+- **配置方式**：per-model 設定 `agents.defaults.models["anthropic/<model>"].params.fastMode`
+- **切換方式**：`/fast` 指令、TUI、Control UI、ACP
 
 ---
 
-### 12.2 Provider 架構
+### 12.2 OpenAI Fast Mode
+
+為 OpenAI 模型（GPT-5.4、Codex）實現 session-level 快速模式：
+
+- **參數映射**：
+  - `reasoning.effort: "low"`（降低推理深度）
+  - `text.verbosity: "low"`（降低輸出冗長度）
+  - `service_tier: "priority"`（優先處理）
+- **適用範圍**：OpenAI Responses API 模型（`openai-responses`、`openai-codex-responses`），僅限公開 OpenAI API
+- **輸入正規化**：支援 `"on"`/`"off"`/`"true"`/`"false"`/`"yes"`/`"no"`/`"1"`/`"0"`/`"fast"`/`"normal"`
+- **切換方式**：`/fast` 指令、TUI、Control UI、ACP
+
+---
+
+### 12.3 新模型/提供者總覽
+
+| 模型/提供者 | 類型 | 關鍵特性 | PR |
+|------------|------|---------|-----|
+| ModelStudio（百煉） | Provider | Qwen 3.5+ 模型，CN/Global 端點，DashScope API | — |
+| OpenRouter Hunter Alpha | Model | 推理啟用，1M context，限時免費 | #43642 |
+| OpenRouter Healer Alpha | Model | 推理+圖片，256k context，限時免費 | #43642 |
+| Opencode Go | Provider | 統一路由至 Kimi/GLM/MiniMax | #42313 |
+| Gemini Embedding 2 Preview | Embedding | 記憶搜尋向量嵌入 | #42501 |
+
+---
+
+### 12.4 Provider Plugin 架構
 
 ```
 feat: modularize provider plugin architecture
 ```
 
-Ollama、vLLM、SGLang 遷移至 provider-plugin 架構，provider 擁有 onboarding、discovery、model-picker 和 post-selection hooks。
+Ollama、vLLM、SGLang 遷移至 provider-plugin 架構：
+
+- **Provider 自有 onboarding**：每個 provider 定義自己的引導流程
+- **Discovery hooks**：provider 自行發現可用模型
+- **Model-picker setup**：provider 控制模型選擇器的行為
+- **Post-selection hooks**：模型選擇後的回呼（如設定特定 headers）
+- **非互動式 setup**：支援 `--non-interactive` 模式
+- **效果**：核心 provider wiring 更加模組化，新增 provider 不需修改核心程式碼
 
 ---
 
-### 12.3 Provider 修復
+### 12.5 Provider 修復總覽
 
-| 提供者 | 修復 | PR |
-|--------|------|-----|
-| Gemini/google-vertex | model-id 正規化至 flash-lite-preview | #42435 |
-| Kimi Coding | 原生 Anthropic tool format 恢復 | #38669 |
-| Kimi Coding | 預設 User-Agent header | #30099 |
-| Kimi Coding | 遵從明確 baseUrl | #36353 |
-| Moonshot CN | 遵從 platform.moonshot.cn baseUrl | #33637 |
-| Ollama/Kimi | Moonshot payload 相容性 | #41519 |
-| Ollama | 隱藏 native reasoning output | #45330 |
-| OpenAI Codex Spark | resolver fallbacks | — |
-| Azure OpenAI | startup instruction 避免 HTTP 400 | #43403 |
-| Venice | 辨識 402 billing | #43205 |
-| Poe | 辨識 billing | #42278 |
-| OpenRouter | HTTP 422 分類 | #43823 |
-| Gemini | MALFORMED_RESPONSE 重試 | #42292 |
-| ModelStudio | env discovery wiring | #40634 |
-| Custom provider | compat opt-in 遵從 | #44432 |
-| Anthropic | 啟動 crash 避免 | #45520 |
-| OpenAI completions | stale transport 正規化 | — |
+| 提供者 | 修復 | 詳情 | PR |
+|--------|------|------|-----|
+| Gemini/google-vertex | model-id 正規化 | `gemini-3.1-flash-lite` 正確解析為 `-preview` 變體 | #42435 |
+| Kimi Coding | 原生 tool format | 恢復 Anthropic `tool_use` blocks（不再降級為 XML） | #38669 |
+| Kimi Coding | User-Agent | 預設 `"OpenClaw"` header（訂閱認證需要） | #30099 |
+| Kimi Coding | baseUrl 遵從 | 使用者配置的端點不被預設覆寫 | #36353 |
+| Moonshot CN | baseUrl 認證 | `platform.moonshot.cn` API Keys 正確認證 | #33637 |
+| Ollama/Kimi | Moonshot 相容性 | Thinking + tool_choice 衝突自動化解 | #41519 |
+| Ollama | 推理可見性 | 不再將內部 thinking/reasoning 洩漏至回覆 | #45330 |
+| OpenAI Codex Spark | 路徑限制 | 僅限 `openai-codex/` 路徑，直接 API 被抑制 | — |
+| Azure OpenAI | 內容過濾器 | `"Execute...now"` → `"Run..."` 避免 false positive | #43403 |
+| Venice | Billing 偵測 | HTTP 402 觸發 fallback | #43205 |
+| Poe | Billing 偵測 | `"used up your points"` 觸發 fallback | #42278 |
+| OpenRouter | 錯誤分類 | HTTP 422→format，credits→billing | #43823 |
+| Gemini | 錯誤重試 | MALFORMED_RESPONSE 視為可重試 | #42292 |
+| ModelStudio | env 發現 | 修復 `secret-input-mode=ref` 拋出例外 | #40634 |
+| Custom provider | compat opt-in | 使用者明確的 `compat` 設定被遵從 | #44432 |
+| Anthropic | 啟動穩定 | 避免啟動 crash | #45520 |
+| OpenAI completions | transport | stale completions transport 正規化 | — |
 
 ---
 
