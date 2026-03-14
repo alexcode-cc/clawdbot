@@ -25,11 +25,12 @@
 
 ### 指令與操作
 - [CLI 指令詳解](./12-CLI指令詳解.md) - 所有 CLI 指令完整參考、選項說明、情境範例
+- [大模型設定與驗證詳解](./13-大模型設定與驗證詳解.md) - 23 個提供者設定、認證流程、模型切換、驗證方法
 
 ### 實戰指南
-- [從零開始設定實作](./13-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
-- [從零開始設定實作（Mac Mini M4 16G）](./14-從零開始設定實作(Mac-Mini-M4-16G).md) - Mac Mini M4 16GB 專用設定指南（含硬體最佳化）
-- [從零開始設定實作（Mac Mini M4 24G）](./15-從零開始設定實作(Mac-Mini-M4-24G).md) - Mac Mini M4 24GB 專用設定指南（32B 模型 + 記憶體深度優化）
+- [從零開始設定實作](./14-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
+- [從零開始設定實作（Mac Mini M4 16G）](./15-從零開始設定實作(Mac-Mini-M4-16G).md) - Mac Mini M4 16GB 專用設定指南（含硬體最佳化）
+- [從零開始設定實作（Mac Mini M4 24G）](./16-從零開始設定實作(Mac-Mini-M4-24G).md) - Mac Mini M4 24GB 專用設定指南（32B 模型 + 記憶體深度優化）
 
 ### 提交分析
 - [2026-03-03 提交分析](./commit-analyze-20260303.md) - 682 個提交分析（初始分析）
