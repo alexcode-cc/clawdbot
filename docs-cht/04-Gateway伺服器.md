@@ -437,3 +437,37 @@ Control UI dashboard 經過全面翻新，新增：
 - Kind 設定腳本
 - 部署文件
 - 健康檢查端點（`/healthz`、`/readyz`）適用於 K8s probe 配置
+
+## Gateway 改善（2026.3.23+）
+
+### 安全強化
+- **Canvas route auth**：Canvas 路由現在要求身份驗證
+- **Agent session reset admin**：Agent session reset 需要 admin 權限
+- **Control UI operator.read**：修復 operator.read scope 處理
+- **Discovery fail closed**：未解析的 discovery endpoints fail closed
+- **Internal command gating**：限制內部指令的持久化變異
+- **Hook ingress provenance**：保留非同步 hook ingress 來源資訊
+- **OpenRouter pricing guard**：防止 auto pricing 遞迴
+
+### 穩定性
+- **SIGTERM 關閉**：強化 gateway SIGTERM 關閉行為
+- **Probe auth**：完成 gateway probe auth landing
+- **Status 韌性**：Status helpers 在 netif 失敗時保持韌性
+- **Supervised lock**：強化 supervised lock 和 browser attach 就緒檢查
+- **Probe false negatives**：避免連接後的 probe false negatives
+
+### 功能
+- **Plugin context lazy**：延遲解析 fallback plugin context
+- **Discovery target**：集中化 discovery target 處理
+- **.env 變數**：安裝時包含 .env 變數在 gateway service 環境中
+- **Talk speak RPC**：新增 talk speak RPC 方法
+- **Webchat 圖片**：inbound 圖片持久化至磁碟
+
+### Doctor 改善
+- **Plugin allowlist 清理**：清理過期的 plugin allowlist 和 entry refs
+- **Plugin capability 摘要**：workspace status 新增 bundle plugin capability 摘要
+- **Orphan transcript**：釐清孤立 transcript archive 提示
+
+### Windows Gateway（2026.3.23+）
+- npm 更新後正確重啟 gateway
+- Windows media path 防護

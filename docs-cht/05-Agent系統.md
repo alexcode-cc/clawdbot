@@ -163,7 +163,8 @@ Agent 工作區支援以下特殊檔案：
 | `search`      | 搜尋檔案                                                                                                    |
 | `glob`        | 模式匹配搜尋                                                                                                |
 | `browser`     | 瀏覽器控制                                                                                                  |
-| `web_search`  | 網路搜尋                                                                                                    |
+| `web_search`  | 網路搜尋（Plugin Capability 系統）                                                                          |
+| `image_generate` | 圖片生成（Plugin Capability 系統，Google/fal providers）                                                  |
 | `fetch`       | HTTP 請求                                                                                                   |
 | `node.*`      | 裝置能力（相機、位置等）                                                                                    |
 | `canvas`      | Canvas A2UI                                                                                                 |
@@ -238,8 +239,8 @@ const sandbox: SandboxOptions = {
 | Together AI   | Llama、DeepSeek、Kimi 等開源模型                                            |
 | Bedrock       | Claude (AWS)（包含 Bedrock Claude 4.6 refs）                                |
 | Qwen          | 通義千問                                                                    |
-| xAI           | Grok                                                                        |
-| MiniMax       | MiniMax Portal（OAuth 認證）；支援 `MiniMax-M2.5-highspeed`                 |
+| xAI           | Grok（含 fast mode）                                                        |
+| MiniMax       | MiniMax Portal（OAuth 認證，含 fast mode）；支援 `MiniMax-M2.5-highspeed`   |
 | Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`）；含 Gemini 3.1 Flash-Lite |
 | Vercel AI     | Vercel AI Gateway catalog 自動發現                                          |
 | Venice        | 預設 kimi-k2-5，發現限制和工具支援強化                                       |
@@ -247,8 +248,11 @@ const sandbox: SandboxOptions = {
 | Copilot       | Copilot Proxy（支援 token 過期自動重新整理）                                |
 | Moonshot/Kimi | 原生 thinking payload 相容，failover stop reason error 視為 timeout         |
 | Opencode Go   | Opencode Go provider                                                       |
-| ModelStudio   | 阿里巴巴百煉 Coding Plan（原 Bailian）                                     |
+| ModelStudio   | 阿里巴巴百煉（Coding Plan + 標準 DashScope 端點）                          |
 | Poe           | Poe 模型（402 'used up your points' billing 識別）                          |
+| Anthropic Vertex | Claude via GCP Vertex AI                                                |
+| GitHub Copilot | 動態 model ID 解析                                                         |
+| Xiaomi MiMo   | MiMo V2 Pro / Omni（OpenAI completions API）                               |
 
 ### 模型配置
 
@@ -575,15 +579,18 @@ Agent 系統支援多層降級策略：
 
 ## Web 搜尋提供者
 
-`web_search` 工具支援以下提供者（自動偵測順序：Brave → Gemini → Kimi → Perplexity → Grok）：
+`web_search` 工具現在透過 **Plugin Capability 系統** 運作，支援以下提供者：
 
-| 提供者                | 特色                                       |
-| --------------------- | ------------------------------------------ |
-| Perplexity Search API | 結構化結果 + 語言/地區/時間篩選 + 內容提取 |
-| Brave Search          | 快速結構化結果 + LLM Context API 模式      |
-| Gemini                | Google Search grounding                    |
-| Grok                  | xAI web-grounded 回應                      |
-| Kimi                  | Moonshot web search                        |
+| 提供者                | 類型            | 特色                                       |
+| --------------------- | --------------- | ------------------------------------------ |
+| Brave Search          | Bundled plugin（預設啟用） | 快速結構化結果 + LLM Context API 模式 |
+| DuckDuckGo            | Bundled plugin（experimental） | 免費，不需 API key             |
+| Exa                   | Bundled plugin  | 語意搜尋 + extract 功能                    |
+| Tavily                | Bundled plugin  | search + extract 雙工具                    |
+| Perplexity Search API | 內建            | 結構化結果 + 語言/地區/時間篩選 + 內容提取 |
+| Gemini                | 內建            | Google Search grounding                    |
+| Grok                  | 內建            | xAI web-grounded 回應                      |
+| Kimi                  | 內建            | Moonshot web search                        |
 
 ```json5
 {
@@ -720,3 +727,78 @@ Ollama、vLLM、SGLang 遷移至 provider-plugin 架構：
 - 多模態圖片和音訊索引
 - Bootstrap 載入偏好 MEMORY.md（fallback memory.md）
 - Case-insensitive Docker mounts 不再注入重複記憶
+- 記憶工具獨立註冊，防止耦合失敗
+- LanceDB runtime 按需 bootstrap
+- Pluggable system prompt section for memory plugins
+
+## Context Engine 增強（2026.3.23+）
+
+### Transcript 維護
+
+新增自動 transcript 維護機制（`context engine transcript maintenance`），保持 session transcript 的健康狀態。
+
+### assemble() 增強
+
+`assemble()` 方法現在接收更多上下文資訊：
+- **incoming prompt**：傳入 incoming prompt，改善上下文組裝品質
+- **modelId**：傳入 modelId，支援 per-model 上下文策略
+- **compaction delegate**：暴露 compaction delegate helper
+
+### Compaction 改善（2026.3.23+）
+
+- **JSONL 截斷**：compaction 後截斷 session JSONL，防止無限制增長
+- **使用者通知**：compaction 開始和完成時通知使用者
+- **Content-aware guard**：compaction guard 具備內容感知，防止 heartbeat sessions 的誤取消
+- **Memory flush dedup**：使用 content hash 替代 compactionCount 進行記憶 flush 去重
+- **Safeguard summary budget**：修復 compaction safeguard summary budget
+- **Transcript 指標**：保持 session transcript 指標在 compaction 後保持最新
+- **Skills compact fallback**：compaction 前透過 compact fallback 保留所有 skills
+
+## Plugin Capability 系統（2026.3.23+）
+
+核心能力已遷移至 Plugin Capability 系統，透過插件 manifest 中的 capability 註冊：
+
+| 能力 | 說明 |
+| ---- | ---- |
+| Web Search | Provider 和 runtime 完全由插件控制 |
+| Image Generation | `image_generate` 工具，Google/fal.ai providers |
+| Speech / TTS | Deepgram、Groq、Microsoft providers，記憶體內語音合成 |
+| Media Understanding | 圖片/音訊/影片分析由 vendor plugins 提供 |
+
+## Image Generation（2026.3.23+）
+
+```json5
+{
+  agents: {
+    defaults: {
+      tools: {
+        imageGeneration: {
+          enabled: true,
+          provider: "google", // google | fal
+        },
+      },
+    },
+  },
+}
+```
+
+## Fast Mode 擴展（2026.3.23+）
+
+Fast mode 支援擴展至更多提供者：
+- **xAI (Grok)**：支援 fast mode
+- **MiniMax**：支援 fast mode + pi defaults 同步
+
+## 新提供者（2026.3.23+）
+
+- **Anthropic Vertex**：Claude via GCP Vertex AI
+- **xAI**：Grok 完整整合
+- **GitHub Copilot**：動態 model ID 解析
+- **Xiaomi MiMo V2**：MiMo V2 Pro 和 Omni 模型
+- **Mistral**：新增 curated catalog models
+- **ModelStudio**：新增標準（按量付費）DashScope 端點
+
+## Billing / Fallback 改善（2026.3.23+）
+
+- 泛化 api_error 偵測以觸發 fallback model
+- Moonshot compat 和 xAI fast remaps 集中化
+- Anthropic thinking block 排序保留
