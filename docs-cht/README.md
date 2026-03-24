@@ -5,36 +5,36 @@
 ## 文件索引
 
 ### 核心概念
-- [專案概覽](./01-專案概覽.md) - 專案介紹、功能特色、技術棧
-- [架構設計](./02-架構設計.md) - 整體架構、模組組織、設計模式
+- [01 - 專案概覽](./01-專案概覽.md) - 專案介紹、功能特色、技術棧、版本資訊
+- [02 - 架構設計](./02-架構設計.md) - 分層架構、模組組織、核心設計模式、Plugin Capability 系統
 
 ### 核心模組
-- [CLI 命令系統](./03-CLI命令系統.md) - 命令註冊、懶加載、路由機制
-- [Gateway 伺服器](./04-Gateway伺服器.md) - WebSocket、RPC、會話管理
-- [Agent 系統](./05-Agent系統.md) - AI Agent、工具、系統提示詞
-- [通訊頻道](./06-通訊頻道.md) - 內建頻道、擴充頻道、訊息路由
+- [03 - CLI 命令系統](./03-CLI命令系統.md) - 命令註冊、懶加載、路由機制
+- [04 - Gateway 伺服器](./04-Gateway伺服器.md) - WebSocket、RPC、健康檢查、Kubernetes 支援、安全強化
+- [05 - Agent 系統](./05-Agent系統.md) - AI Agent、26+ 提供者、工具策略、Context Engine、Compaction、Fast Mode、Plugin Capability
+- [06 - 通訊頻道](./06-通訊頻道.md) - 8 內建 + 35+ 擴充頻道、Web Search 插件、Outbound 插件化
 
-### 擴充系統
-- [擴充套件開發](./07-擴充套件開發.md) - 插件架構、API、範例
-- [應用程式](./08-應用程式.md) - iOS、Android、macOS 應用
+### 擴充與應用
+- [07 - 擴充套件開發](./07-擴充套件開發.md) - 插件架構、Plugin Capability（Web Search/Image Gen/TTS/Media）、ClawHub 市場
+- [08 - 應用程式](./08-應用程式.md) - iOS、Android（含記憶體/安全修復）、macOS 應用
 
-### 開發指南
-- [開發環境設定](./09-開發環境設定.md) - 安裝、建置、測試
-- [配置系統](./10-配置系統.md) - 配置結構、驗證、環境變數
-- [API 參考](./11-API參考.md) - Gateway RPC、Plugin SDK
+### 設定與配置
+- [09 - 開發環境設定](./09-開發環境設定.md) - 安裝、建置、測試、Mobile 開發
+- [10 - 配置系統](./10-配置系統.md) - 配置結構、模型失效容錯備份（Failover）、環境變數、SecretRef
+- [11 - API 參考](./11-API參考.md) - Gateway RPC、Plugin SDK
 
 ### 指令與操作
-- [CLI 指令詳解](./12-CLI指令詳解.md) - 所有 CLI 指令完整參考、選項說明、情境範例
-- [大模型設定與驗證詳解](./13-大模型設定與驗證詳解.md) - 23 個提供者設定、認證流程、模型切換、驗證方法
+- [12 - CLI 指令詳解](./12-CLI指令詳解.md) - 所有 CLI 指令完整參考、選項說明、情境範例
+- [13 - 大模型設定與驗證詳解](./13-大模型設定與驗證詳解.md) - 26+ 提供者設定、認證流程、模型切換、驗證方法
 
 ### 安裝設定與系統
-- [Onboard 安裝設定詳解](./17-Onboard安裝設定詳解.md) - `openclaw onboard` 完整指南（Skills、Hooks、Boot.md、Session Memory）
-- [長期記憶系統詳解](./18-長期記憶系統詳解.md) - 記憶儲存、索引搜尋、自動沖洗、濃縮清除策略
+- [17 - Onboard 安裝設定詳解](./17-Onboard安裝設定詳解.md) - `openclaw onboard` 完整指南（50+ Skills、4 Hooks、Boot.md、Gateway 設定）
+- [18 - 長期記憶系統詳解](./18-長期記憶系統詳解.md) - 記憶儲存格式、6 嵌入提供者、混合搜尋、自動沖洗、濃縮清除策略
 
 ### 實戰指南
-- [從零開始設定實作](./14-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
-- [從零開始設定實作（Mac Mini M4 16G）](./15-從零開始設定實作(Mac-Mini-M4-16G).md) - Mac Mini M4 16GB 專用設定指南（含硬體最佳化）
-- [從零開始設定實作（Mac Mini M4 24G）](./16-從零開始設定實作(Mac-Mini-M4-24G).md) - Mac Mini M4 24GB 專用設定指南（32B 模型 + 記憶體深度優化）
+- [14 - 從零開始設定實作](./14-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
+- [15 - 從零開始設定實作（Mac Mini M4 16G）](./15-從零開始設定實作(Mac-Mini-M4-16G).md) - Mac Mini M4 16GB 專用設定指南（含硬體最佳化）
+- [16 - 從零開始設定實作（Mac Mini M4 24G）](./16-從零開始設定實作(Mac-Mini-M4-24G).md) - Mac Mini M4 24GB 專用設定指南（32B 模型 + 記憶體深度優化）
 
 ### 提交分析
 - [2026-03-03 提交分析](./commit-analyze-20260303.md) - 682 個提交分析（初始分析）
@@ -90,16 +90,17 @@ openclaw/
 │   ├── browser/         # 瀏覽器控制
 │   ├── tui/             # 終端 UI (TUI)
 │   ├── process/         # 進程管理與監督
-│   ├── media/           # 媒體處理
-│   ├── memory/          # 記憶系統
+│   ├── media/           # 媒體處理（Plugin Capability）
+│   ├── memory/          # 記憶系統（索引、搜尋、嵌入）
 │   ├── secrets/         # Secrets 管理
 │   ├── cron/            # 排程任務
-│   ├── plugins/         # 插件系統
-│   ├── plugin-sdk/      # 插件開發 SDK
-│   ├── providers/       # LLM 提供者
+│   ├── hooks/           # Hooks 系統（boot-md、session-memory 等）
+│   ├── plugins/         # 插件系統（含懶加載邊界）
+│   ├── plugin-sdk/      # 插件開發 SDK（Capability 註冊）
+│   ├── providers/       # LLM 提供者（含 OpenAI WS 串流）
 │   ├── shared/          # 共用輔助函式
 │   └── infra/           # 基礎設施
-├── extensions/          # 擴充套件（插件）
+├── extensions/          # 擴充套件（50+ 插件）
 ├── apps/                # 原生應用程式
 │   ├── ios/             # iOS 應用 (Swift)
 │   ├── android/         # Android 應用 (Kotlin)
