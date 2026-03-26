@@ -471,3 +471,27 @@ Control UI dashboard 經過全面翻新，新增：
 ### Windows Gateway（2026.3.23+）
 - npm 更新後正確重啟 gateway
 - Windows media path 防護
+
+## Gateway 改善（2026.3.24+）
+
+### OpenAI 相容端點
+- 新增 `/v1/models` 和 `/v1/embeddings` OpenAI 相容端點
+- **Agent-first**：相容層以 Agent 為中心，回傳的模型列表對齊當前 Agent 設定
+- 使第三方工具可透過 OpenAI 相容 API 與 OpenClaw Gateway 互動
+
+### 穩定性
+- **Connect challenge timeout**：提升預設 connect challenge timeout
+- **Channel registry pin**：啟動時 pin channel registry 以 survive registry swaps
+- **Restart sentinel**：重啟後喚醒 session 並保留 thread routing
+- **Runtime state**：啟動 abort 時正確關閉 runtime state
+- **Channel cache**：re-pin 時失效 channel caches
+- **Minimal registry**：保持最小 gateway channel registry live
+
+### Daemon
+- `gateway start` 會 bootstrap 已停止的 service
+- 集中化 daemon service 啟動狀態流程
+
+### Doctor
+- 更新期間跳過 service config repairs
+- 非互動模式下遵從 --fix
+- 新增 config clobber 鑑識

@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.3.23` | Node.js `>=22.16.0`
+> 版本：`2026.3.24` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.3.23 或更新版本
+# 應顯示 2026.3.24 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1768,4 +1768,4 @@ openclaw agent --message "運行自動化測試" --json --timeout 300
 
 ---
 
-*本文件基於 OpenClaw `2026.3.23` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+*本文件基於 OpenClaw `2026.3.24` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
