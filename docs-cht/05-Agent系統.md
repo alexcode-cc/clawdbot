@@ -253,6 +253,7 @@ const sandbox: SandboxOptions = {
 | Anthropic Vertex | Claude via GCP Vertex AI                                                |
 | GitHub Copilot | 動態 model ID 解析                                                         |
 | Xiaomi MiMo   | MiMo V2 Pro / Omni（OpenAI completions API）                               |
+| Microsoft Foundry | Microsoft AI（Entra ID 認證）                                           |
 
 ### 模型配置
 
@@ -802,3 +803,50 @@ Fast mode 支援擴展至更多提供者：
 - 泛化 api_error 偵測以觸發 fallback model
 - Moonshot compat 和 xAI fast remaps 集中化
 - Anthropic thinking block 排序保留
+
+## xAI 深度整合（2026.3.28+）
+
+### x_search 工具
+
+透過 xAI Responses API 提供即時 X（Twitter）搜尋。完全由 xAI plugin 擁有，包含：
+- Plugin-owned onboarding 流程
+- 路由通過公開 API seam
+- Fallback auth 解析
+- Plugin key 重用
+
+### code_execution 工具
+
+xAI 原生程式碼執行環境：
+- Plugin-owned codeExecution config
+- 窄化的 config typing
+
+### 架構變更
+
+- xAI provider 預設切換至 Responses API
+- `x_search` 和 `code_execution` 遷移至 plugin 架構
+- 不支援的 payload 欄位和 Responses reasoning params 自動剝離
+- Stale Grok transport 正規化至 Responses
+
+## 新提供者（2026.3.28+）
+
+- **Microsoft Foundry**：Entra ID 認證的 LLM 提供者
+- **Qwen Portal OAuth 移除**：改用 ModelStudio API Key
+- **Provider Model 定義遷移**：核心 model definitions 相容層移除，由 plugins 擁有
+
+## Per-model Cooldown（2026.3.28+）
+
+冷卻範圍改為 per-model（而非 per-provider），階梯式退避，用戶端顯示 rate-limit 訊息。
+
+## Compaction 改善（2026.3.28+）
+
+- 使用量過時時從 transcript 估計觸發預飛 compaction
+- LLM timeout 且 context 使用量高時觸發 compaction
+- 顯示 safeguard cancel 原因並釐清 /compact 跳過
+- 壓制 JSON-wrapped NO_REPLY payloads
+
+## CJK 記憶支援（2026.3.28+）
+
+- QMD chunking 正確計算 CJK 字元（中/日/韓/越南語漢字）
+- Fine-split 保護 UTF-16 surrogate pairs
+- MMR `tokenize()` 支援 CJK/Kana/Hangul 字元
+- Memory flush 追加修復（防止覆寫每日記憶檔案）
