@@ -30,6 +30,7 @@
 ### 安裝設定與系統
 - [17 - Onboard 安裝設定詳解](./17-Onboard安裝設定詳解.md) - `openclaw onboard` 完整指南（50+ Skills、4 Hooks、Boot.md、Gateway 設定）
 - [18 - 長期記憶系統詳解](./18-長期記憶系統詳解.md) - 記憶儲存格式、6 嵌入提供者、混合搜尋、自動沖洗、濃縮清除策略
+- [19 - TUI 斜線指令完整指南](./19-TUI斜線指令完整指南.md) - 60+ 斜線指令語法、參數、用途（含 /btw、/exec、/queue、/acp、/tts）
 
 ### 實戰指南
 - [14 - 從零開始設定實作](./14-從零開始設定實作.md) - 完整工作流程設定（Ollama/Claude Code + Discord + Gmail + GitHub）
