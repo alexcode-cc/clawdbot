@@ -495,3 +495,14 @@ Control UI dashboard 經過全面翻新，新增：
 - 更新期間跳過 service config repairs
 - 非互動模式下遵從 --fix
 - 新增 config clobber 鑑識
+
+## Gateway 安全強化（2026.3.28+）
+
+- **Reconnect scope**：封鎖靜默重連的 scope 升級
+- **Admin verbose**：要求 admin 權限設定持久化 verbose defaults
+- **Device revocation**：中斷已撤銷裝置的 sessions
+- **Node pairing**：限制 node pairing 審批
+- **Chat.send reset**：對齊 chat.send reset scope 檢查
+- **Synthetic origins**：支援 synthetic chat origins
+- **Session workspace reuse**：HTTP tool loading 重用 session workspace
+- **Remote gateway confirm**：發現遠端 gateway 前確認再存入 config
