@@ -850,3 +850,110 @@ xAI 原生程式碼執行環境：
 - Fine-split 保護 UTF-16 surrogate pairs
 - MMR `tokenize()` 支援 CJK/Kana/Hangul 字元
 - Memory flush 追加修復（防止覆寫每日記憶檔案）
+
+## Agent 改善（2026.3.31）
+
+### LLM Idle Timeout
+
+新增可配置的閒置串流超時，讓停滯的 model streams 乾淨地中止：
+
+```json5
+{
+  agents: {
+    defaults: {
+      idleTimeout: 30000, // 毫秒，閒置超時
+    },
+  },
+}
+```
+
+### Overload Failover 可配置
+
+```json5
+{
+  auth: {
+    cooldowns: {
+      retryCount: 1,       // 同 provider 重試次數
+      retryDelayMs: 0,     // 重試延遲
+    },
+  },
+}
+```
+
+- HTTP 410、500 加入容錯分類
+- Per-model cooldown 範圍和階梯式退避
+
+### 背景任務控制平面 (ClawFlow)
+
+任務系統從 ACP-only 簿記演進為 SQLite-backed 共享控制平面：
+
+- **SQLite task ledger**：原子寫入確保資料一致性
+- **統一執行**：ACP、subagent、cron、背景 CLI 統一管理
+- **Task Flow Control**：`openclaw flows list|show|cancel`
+- **Audit/Maintenance**：`openclaw tasks audit`/`maintenance`/`status`
+- **Owner-key 存取邊界**：session-scoped task 更新
+- **Blocked flow retry**：blocked 狀態持久化和 retry
+
+### Pi/Codex Native Web Search
+
+嵌入式 Pi 執行新增原生 Codex web search：
+- Model-level API 的原生搜尋相關性
+- Web search off 時壓制搜尋摘要
+
+### MCP 增強
+
+- **SSE/HTTP Transport**：遠端 MCP 伺服器 URL 配置支援
+- **Tool Namespacing**：`serverName__toolName` 命名空間
+- **Plugin Tools Bridge**：ACP session 的 MCP 工具橋接
+- **Channel MCP Bridge**：頻道事件 MCP 橋接
+- **Connection Timeout**：per-server connection timeouts
+- **Schema 正規化**：修正 OpenAI Responses 的 MCP tool schema
+
+### 記憶改善
+
+- **QMD Extra Collections**：per-agent `memorySearch.qmd.extraCollections` 跨 agent 搜尋
+- **CJK FTS5 Tokenizer**：可配置的 CJK/Kana/Hangul 全文搜尋 tokenizer
+- **Collection 復原**：集合漂移重新綁定
+- **維護排程**：跨 agent 嵌入維護交錯執行
+- **Degraded Status**：向量搜尋降級狀態顯示
+- **Session Transcripts Export**：匯出已封存 QMD session transcripts
+- **QMD Sync Parity Hooks**：同步一致性 hooks
+
+### Exec Approvals 強化
+
+- **Command Carrier 偵測**：strict inline eval 中的指令載體偵測
+- **Shell Init 攔截**：拒絕 shell 初始化檔案腳本匹配
+- **Interpreter 持久化防護**：防止 interpreter allow-always 持久化
+- **Wrapper 解包**：解包 `arch`、`xcrun`、`caffeinate`、`sandbox-exec`
+- **safeBins 收緊**：`awk` 和 `sed` 移出低風險快速路徑
+- **統一頻道 Approvals**：跨頻道統一 approval 路由和授權
+- **Slack 原生 Approvals**：exec approval 提示留在 Slack
+
+### Provider 更新
+
+- **Azure**：停用推理負載省略
+- **OpenAI**：text verbosity 轉發、disabled reasoning 省略
+- **Ollama**：`think=false` 支援、串流事件發射、WSL2 網路診斷
+- **Google/Gemini**：3.1 模型解析、空 `required` 陣列剔除
+- **Mistral**：跨 proxy transport 相容性
+- **Moonshot/Kimi**：Kimi Code 恢復、stream wrapper 解耦
+- **Copilot**：auth refresh overflow 修正
+- **Anthropic**：`api_error` transient 分類、service tier params
+
+### Hooks 增強
+
+- **before_install Hook**：新增 plugin install 時掃描器 hook
+- **requireApproval**：`before_tool_call` hook 支援非同步 approval 要求
+- **runId**：agent hook context 中暴露 `runId`
+- **Inbound Attachments**：hooks 傳遞 inbound attachment arrays
+- **Session Key Rebind**：hook-triggered session keys 重新綁定到目標 agent
+
+### 其他改善
+
+- **Anthropic Claude CLI Migration**：CLI 歷史匯入管線
+- **Subagent Model Precedence**：修正 subagent model 優先序
+- **Compaction Retry Timeout**：修正 compaction retry timeout unhandled rejection
+- **Silent Turn Fail Closed**：silent turns fail closed
+- **Codex server_error**：fail over 和 sanitize
+- **Edit Tool edits[]**：支援 edit tool edits[] payloads
+- **Pi TUI Reply Flush**：message_end 時 flush message-boundary block replies

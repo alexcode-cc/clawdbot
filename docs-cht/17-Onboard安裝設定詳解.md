@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.3.28` | Node.js `>=22.16.0`
+> 版本：`2026.3.31` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.3.28 或更新版本
+# 應顯示 2026.3.31 或更新版本
 ```
 
 ---
@@ -1264,7 +1264,7 @@ openclaw onboard --non-interactive \
   // 精靈元資料（自動寫入）
   wizard: {
     lastRunAt: "2026-03-23T10:00:00.000Z",
-    lastRunVersion: "2026.3.28",
+    lastRunVersion: "2026.3.31",
     lastRunCommand: "onboard",
     lastRunMode: "local",
   },
@@ -1354,4 +1354,4 @@ openclaw config get hooks.internal.entries
 
 ---
 
-*本文件基於 OpenClaw `2026.3.28` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.3.31` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

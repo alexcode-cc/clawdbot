@@ -145,7 +145,7 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.3.28 或更新版本
+# 應顯示 2026.3.31 或更新版本
 ```
 
 ### 方法 B：使用 npm 全域安裝

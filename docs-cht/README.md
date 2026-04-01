@@ -11,11 +11,11 @@
 ### 核心模組
 - [03 - CLI 命令系統](./03-CLI命令系統.md) - 命令註冊、懶加載、路由機制
 - [04 - Gateway 伺服器](./04-Gateway伺服器.md) - WebSocket、RPC、健康檢查、Kubernetes 支援、安全強化
-- [05 - Agent 系統](./05-Agent系統.md) - AI Agent、26+ 提供者、工具策略、Context Engine、Compaction、Fast Mode、Plugin Capability
-- [06 - 通訊頻道](./06-通訊頻道.md) - 8 內建 + 35+ 擴充頻道、Web Search 插件、Outbound 插件化
+- [05 - Agent 系統](./05-Agent系統.md) - AI Agent、26+ 提供者、工具策略、Context Engine、Compaction、Fast Mode、Plugin Capability、ClawFlow 背景任務、MCP 遠端支援
+- [06 - 通訊頻道](./06-通訊頻道.md) - 8 內建 + 35+ 擴充頻道（含 QQ Bot）、Web Search 插件、Outbound 插件化、Matrix Draft Streaming
 
 ### 擴充與應用
-- [07 - 擴充套件開發](./07-擴充套件開發.md) - 插件架構、Plugin Capability（Web Search/Image Gen/TTS/Media）、ClawHub 市場
+- [07 - 擴充套件開發](./07-擴充套件開發.md) - 插件架構、Plugin Capability（Web Search/Image Gen/TTS/Media）、ClawHub 市場、SDK Facades 自動生成、Provider Runtime 插件化
 - [08 - 應用程式](./08-應用程式.md) - iOS、Android（含記憶體/安全修復）、macOS 應用
 
 ### 設定與配置
@@ -45,10 +45,11 @@
 - [2026-03-23 提交分析](./commit-analyze-20260323.md) - 2,694 個提交分析（2026.3.13 → 2026.3.23）
 - [2026-03-26 提交分析](./commit-analyze-20260326.md) - 463 個提交分析（2026.3.23 → 2026.3.24）
 - [2026-03-28 提交分析](./commit-analyze-20260328.md) - 1,267 個提交分析（2026.3.24 → 2026.3.28）
+- [2026-03-31 提交分析](./commit-analyze-20260331.md) - 2,125 個提交分析（2026.3.28 → 2026.3.31）
 
 ## 版本
 
-目前版本：`2026.3.28`
+目前版本：`2026.3.31`
 
 ## 快速開始
 

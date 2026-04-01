@@ -506,3 +506,43 @@ Control UI dashboard 經過全面翻新，新增：
 - **Synthetic origins**：支援 synthetic chat origins
 - **Session workspace reuse**：HTTP tool loading 重用 session workspace
 - **Remote gateway confirm**：發現遠端 gateway 前確認再存入 config
+
+## Gateway 安全強化（2026.3.31）
+
+### 認證與授權
+- **Trusted-proxy 混合 token 拒絕**：`trusted-proxy` 現在拒絕混合的 shared-token 配置
+- **Token rotation session 撤銷**：token rotation 後立即撤銷 active sessions
+- **Mixed handshake rate limiting**：mixed handshake 下保持 shared-auth rate limiting
+- **HTTP tool-invoke 授權收緊**：owner-only 工具不可透過 HTTP invoke
+- **Embeddings HTTP write scope**：強制 embeddings HTTP write scope
+- **Pre-auth websocket 上限**：並行 pre-auth websocket upgrade 上限
+- **Bearer scope 忽略**：忽略 bearer-declared HTTP operator scopes
+- **Trusted-proxy HTTP origin**：拒絕不匹配的 browser Origin headers
+- **Plugin HTTP scope**：plugin-auth HTTP 路由限 read-only，gateway-auth 路由保持 write
+
+### Node 命令與事件
+- **Node 命令需配對核准**：node 命令在配對核准前保持停用
+- **Node 事件信任縮減**：node 觸發執行保持在縮減的信任表面
+- **Node pairing 前禁用 commands**：device pairing 不再足以暴露 node commands
+
+### 背景任務系統 (ClawFlow)
+- **SQLite-backed task ledger**：任務帳本從檔案式存儲遷移到 SQLite
+- **Task flow control**：`openclaw flows list|show|cancel` 線性任務流程控制
+- **Task audit/maintenance/status**：任務健康監控與維護命令
+- **Session-scoped task updates**：task 更新按 session scope
+- **Atomic task-store writes**：原子寫入確保資料一致性
+- **Owner-key task access boundaries**：存取邊界限制
+
+### OpenAI 相容性增強
+- **Flat Responses tool definitions**：`/v1/responses` 支援 flat function tool 定義
+- **Strict tool enforcement**：保留 `strict` 正規化
+- **OpenAI version header**：新增 OpenAI version attribution header
+- **Default operator scopes**：恢復 bearer-authenticated 請求的預設 operator scopes
+
+### 其他改善
+- **Session death loop 防護**：防止過載 fallback 的 session 死循環
+- **SecretRef restart drift**：解決重啟 token 漂移偵測
+- **Plugin route runtime scopes**：縮限 plugin 路由 runtime 範圍
+- **Shared-secret HTTP auth**：標記為設計行為
+- **Gateway startup plugin loading**：收緊 startup plugin loading
+- **Config open without shell interpolation**：無 shell 插值開啟 config 檔案

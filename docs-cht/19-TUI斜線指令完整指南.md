@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.3.28` | Node.js `>=22.16.0`
+> 版本：`2026.3.31` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1082,4 +1082,4 @@ ACP（Agent Control Protocol）允許與外部 agent 後端互動。
 
 ---
 
-*本文件基於 OpenClaw `2026.3.28` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+*本文件基於 OpenClaw `2026.3.31` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
