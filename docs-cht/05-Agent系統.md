@@ -165,6 +165,8 @@ Agent 工作區支援以下特殊檔案：
 | `browser`     | 瀏覽器控制                                                                                                  |
 | `web_search`  | 網路搜尋（Plugin Capability 系統）                                                                          |
 | `image_generate` | 圖片生成（Plugin Capability 系統，Google/fal providers）                                                  |
+| `video_generate` | 影片生成（Runway/xAI/Alibaba/Qwen providers，非同步任務追蹤）                                            |
+| `music_generate` | 音樂生成（ComfyUI workflow 支援）                                                                         |
 | `fetch`       | HTTP 請求                                                                                                   |
 | `node.*`      | 裝置能力（相機、位置等）                                                                                    |
 | `canvas`      | Canvas A2UI                                                                                                 |
@@ -237,11 +239,11 @@ const sandbox: SandboxOptions = {
 | Ollama        | Llama 3.3, Qwen 2.5, DeepSeek R1 等                                         |
 | OpenRouter    | 多種模型（x-ai/grok 自動跳過 `reasoning.effort` 注入）                      |
 | Together AI   | Llama、DeepSeek、Kimi 等開源模型                                            |
-| Bedrock       | Claude (AWS)（包含 Bedrock Claude 4.6 refs）                                |
-| Qwen          | 通義千問                                                                    |
-| xAI           | Grok（含 fast mode）                                                        |
-| MiniMax       | MiniMax Portal（OAuth 認證，含 fast mode）；支援 `MiniMax-M2.5-highspeed`   |
-| Google Gemini | Gemini 模型（CLI Auth / Antigravity Auth；null properties 自動強制為 `{}`）；含 Gemini 3.1 Flash-Lite |
+| Bedrock       | Claude (AWS)（含 Guardrails、IAM auth、Inference Profiles）                 |
+| Qwen          | 通義千問 + 影片生成                                                          |
+| xAI           | Grok（含 fast mode、x_search plugin-owned auth）                            |
+| MiniMax       | MiniMax Portal（OAuth 認證，含 fast mode、native TTS、bundled web search）   |
+| Google Gemini | Gemini 模型（CLI OAuth、managed prompt caching、cached content）；含 Gemini 3.1 Flash-Lite |
 | Vercel AI     | Vercel AI Gateway catalog 自動發現                                          |
 | Venice        | 預設 kimi-k2-5，發現限制和工具支援強化                                       |
 | Kilocode      | 所有模型可用                                                                |
@@ -250,10 +252,13 @@ const sandbox: SandboxOptions = {
 | Opencode Go   | Opencode Go provider                                                       |
 | ModelStudio   | 阿里巴巴百煉（Coding Plan + 標準 DashScope 端點）                          |
 | Poe           | Poe 模型（402 'used up your points' billing 識別）                          |
-| Anthropic Vertex | Claude via GCP Vertex AI                                                |
-| GitHub Copilot | 動態 model ID 解析                                                         |
+| Anthropic Vertex | Claude via GCP Vertex AI（含 prompt cache retention）                    |
+| GitHub Copilot | 動態 model ID 解析（含 IDE auth headers）                                   |
 | Xiaomi MiMo   | MiMo V2 Pro / Omni（OpenAI completions API）                               |
 | Microsoft Foundry | Microsoft AI（Entra ID 認證）                                           |
+| Bedrock Mantle | OpenAI-compatible Bedrock 提供者                                          |
+| StepFun       | StepFun bundled provider                                                   |
+| Fireworks     | Fireworks 推論提供者                                                        |
 
 ### 模型配置
 
@@ -957,3 +962,152 @@ xAI 原生程式碼執行環境：
 - **Codex server_error**：fail over 和 sanitize
 - **Edit Tool edits[]**：支援 edit tool edits[] payloads
 - **Pi TUI Reply Flush**：message_end 時 flush message-boundary block replies
+
+## Agent 改善（2026.4.5）
+
+### Dreaming 記憶促進系統
+
+全新的多階段記憶促進系統，模擬人類睡眠中的記憶鞏固：
+
+- **Sleep Phases**：多階段記憶處理（引入 → 處理 → 提升 → 鞏固）
+- **Weighted Recall Thresholds**：加權回憶閾值決定哪些記憶值得提升
+- **REM Preview**：安全預覽和重播即將提升的記憶，避免錯誤提升
+- **Aging Controls**：控制記憶隨時間的衰減速率
+- **DREAMS Trail**：記憶追蹤日誌從 session transcript 移至獨立 `dreams.md`
+- **Dreaming UI**：Control UI 新增 Dreaming 控制面板（模式切換、階段統計、hover 說明）
+- **Multilingual Promotion**：多語言記憶提升強化
+- **Daily Chunking**：每日 dreaming 攝入分塊處理
+- **Bedrock Embedding Provider**：新增 AWS Bedrock 嵌入提供者
+
+### TaskFlow 任務系統（原 ClawFlow，已更名）
+
+- **更名**：ClawFlow 正式更名為 **TaskFlow**
+- **Managed Child Execution**：managed 子任務執行
+- **Chat-native Task Board**：聊天原生任務面板（`/tasks` 命令）
+- **Bound TaskFlow Runtime**：plugin 綁定的 TaskFlow runtime
+- **Registry Observers**：hooks 更名為 observers
+- **Stale Row 過濾**：status cards 中過濾過時行
+- **Event Loop 保護**：防止同步 sweep 阻塞 event loop
+- **Stale Task 清理**：清理過時的 cron 和 chat-backed tasks
+
+### Prompt Cache 穩定性
+
+Prompt cache 穩定性升級為正式的正確性/效能關鍵領域：
+
+```json5
+{
+  // Prompt cache 相關配置
+  agents: {
+    defaults: {
+      compaction: {
+        // 優先壓縮最新 tool results 保留 cache prefix
+        // 延遲歷史圖片修剪以保護 cache prefix
+        // 3-turn 歷史圖片 cache 窗口
+      },
+    },
+  },
+}
+```
+
+- **MCP 工具排序**：確定性排序以穩定 prompt cache
+- **壓縮策略**：優先壓縮最新 tool results 保留 cache prefix
+- **圖片修剪延遲**：延遲歷史圖片修剪以保護 cache prefix
+- **3-turn 圖片窗口**：保留完整 3-turn 歷史圖片 cache 窗口
+- **Vertex AI Cache**：Anthropic Vertex AI 啟用 prompt cache retention
+- **穩定 Context 排序**：project context 排在 heartbeat 之前
+- **Transport 分離**：依 transport 分離 system prompt cache prefix
+- **Break 診斷**：新增 prompt cache break 診斷工具
+
+### 影片/音樂生成
+
+- **影片生成**：`video_generate` 工具，支援 Runway、xAI、Alibaba、Qwen providers
+- **音樂生成**：`music_generate` 工具，透過 ComfyUI workflow
+- **非同步任務追蹤**：影片/音樂生成使用非同步任務追蹤和完成分離
+- **Async Media Delivery**：非同步媒體直接投遞旗標
+
+### Provider 架構集中化
+
+Provider 系統經歷大規模重構：
+- **Request 集中化**：capabilities、headers、attribution、media shaping 統一
+- **Stream Family 系統**：stream wrapper 組合化，共享 stream family hooks
+- **Provider 懶加載**：所有 provider plugins（Anthropic、OpenAI、Bedrock、Google 等）改為懶加載
+- **Transport 統一**：transport policy 正規化和統一解析
+- **Plugin 所有權**：provider 預設值、錯誤策略、replay runtime 全部移入 plugin
+
+### 新提供者（2026.4.5）
+
+| Provider | 說明 |
+|----------|------|
+| Bedrock Mantle | OpenAI-compatible Bedrock 提供者 |
+| Bedrock Guardrails | AWS Bedrock Guardrails 支援 |
+| Bedrock Inference Profiles | 推論 profile 發現和 region injection |
+| Bedrock IAM Auth | IAM credential 認證 |
+| StepFun | StepFun bundled provider plugin |
+| Fireworks | Fireworks 推論提供者 |
+| Qwen Video | Qwen 影片生成 |
+| MiniMax TTS | MiniMax native TTS speech provider |
+| MiniMax Web Search | MiniMax bundled web search |
+| SearXNG | SearXNG bundled web search |
+| Ollama Web Search | Ollama bundled web search |
+| Vydra | 媒體生成提供者 |
+
+### Failover 改進（2026.4.5）
+
+- Rate-limit profile rotation cap 後自動升級到 model fallback
+- 通用 provider 錯誤分類為 failover
+- AbortError/stream-abort 分類為 timeout
+- OpenRouter 403 觸發 billing fallback
+- 區分 overloaded 和 rate-limit 使用者訊息
+
+### Exec Approvals 改進（2026.4.5）
+
+- **Windows Exec Allowlist**：完整 argPattern allowlist flow 和動態提示
+- **原生聊天 Approvals**：自動啟用原生聊天 approval
+- **Matrix Exec Approvals**：Matrix 頻道新增原生 exec approval + reaction 快捷鍵
+- **Host Exec 預設 Yolo**：host exec 預設模式變更為 yolo
+- **Policy Reporting**：統一有效策略報告和操作
+- **Fail-Open 修復**：exec script preflight fail-open 繞過關閉
+- **Reuse Gateway Approvals**：gateway allow-always approvals 可重用
+
+### 新配置選項（2026.4.5）
+
+```json5
+{
+  agents: {
+    defaults: {
+      params: {}, // 全域預設 provider params
+      compaction: {
+        notifyUser: false, // 壓縮是否通知使用者
+      },
+    },
+  },
+  // Cron per-job tool allowlist
+  // cron: { jobs: [{ tools: ["read", "write"] }] }
+  // Gateway chat history max chars
+  // gateway: { webchat: { chatHistoryMaxChars: 50000 } }
+}
+```
+
+### Hooks 增強（2026.4.5）
+
+- **before_agent_reply**：reply claiming pattern hook
+- **Reply dispatch hook**：plugin reply dispatch hook
+- **session_end enrichment**：session_end lifecycle hooks 資料豐富化
+- **Passive hooks**：mention-skipped group messages 發射 passive hooks
+
+### 其他改善（2026.4.5）
+
+- **Anthropic Thinking Recovery**：crash 後恢復 Anthropic thinking
+- **Claude CLI Auth**：claude-cli runtime auth、login profiles 持久化、session id 持久化
+- **Configurable Context Visibility**：可配置的 context visibility
+- **Wildcard Peer Bindings**：`peer.id="*"` 多 agent routing
+- **Default Subagent Allowlists**：預設 subagent allowlists 支援
+- **Inherited Agent Skill Allowlists**：Agent skill 繼承允許清單
+- **Plugin Config TUI**：Plugin 配置 TUI 整合到 onboard/configure
+- **ClawHub Skill Search**：Control UI 中的 ClawHub 搜尋
+- **Structured Plan Updates**：實驗性結構化計畫更新
+- **Provider System Prompt Contributions**：Provider 擁有的 system prompt 貢獻
+- **Heartbeat Task Batching**：透過 HEARTBEAT.md 的任務批次支援
+- **GPT Personality Overlay**：OpenAI 可選 GPT 個性覆蓋
+- **Lobster Managed TaskFlow**：Lobster 管理的 TaskFlow 模式
+- **Lobster In-Process Workflows**：Lobster 程序內工作流

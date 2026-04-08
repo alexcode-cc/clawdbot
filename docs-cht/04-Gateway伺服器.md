@@ -546,3 +546,43 @@ Control UI dashboard 經過全面翻新，新增：
 - **Shared-secret HTTP auth**：標記為設計行為
 - **Gateway startup plugin loading**：收緊 startup plugin loading
 - **Config open without shell interpolation**：無 shell 插值開啟 config 檔案
+
+## Gateway 改善（2026.4.5）
+
+### 安全強化
+- **Exec Fail-Open 修復**：修復 exec approval 在連線斷開時的 fail-open 漏洞，改為 fail-closed
+- **Browser SSRF 防護**：瀏覽器工具新增 SSRF 保護（私有 IP 限制）
+- **Sandbox Home Credential Binds**：sandbox 限制 home 目錄認證綁定
+- **Bootstrap Token Revocation**：bootstrap token 使用後立即撤銷
+- **Device Pairing Scope 收緊**：裝置配對 scope 進一步限縮
+- **Hook Fail-closed**：hooks 執行失敗時 fail-closed 而非靜默跳過
+- **Context Leak 修復**：修復多處 context 洩漏問題
+- **Untrusted File Wrapping**：不受信任檔案內容加入安全包裝標記
+
+### 穩定性
+- **記憶體洩漏修復**：修復多處 Gateway 記憶體洩漏
+- **WebSocket 改善**：WebSocket 連線穩定性改善
+- **預設 Local Mode**：Gateway 預設為 local mode
+- **HTTP Pipeline 錯誤處理**：改善 HTTP pipeline 錯誤處理
+
+### 背景任務系統（TaskFlow）
+- **ClawFlow 更名為 TaskFlow**：背景任務系統正式更名
+- **Managed Child Execution**：TaskFlow 支援受管理的子任務執行
+- **Chat-native Task Board**：聊天原生任務面板
+- **Bound Runtime**：TaskFlow 綁定 runtime 執行環境
+- **Task Ledger 改善**：任務帳本穩定性改善
+
+### Prompt Cache 穩定性
+- **確定性 MCP Tool 排序**：MCP 工具以確定性排序組裝，避免快取失效
+- **壓縮策略優化**：壓縮策略從最新內容開始變異，保留快取前綴
+- **3-turn Image Cache 視窗**：圖片快取固定 3 turn 視窗
+- **Break 診斷**：新增 prompt cache break 診斷工具
+
+### OpenAI 相容性
+- **Responses API 改善**：`/v1/responses` 端點持續改善
+- **Tool definitions 正規化**：工具定義正規化對齊 OpenAI 規範
+
+### 其他
+- **Video/Music 生成 Gateway 支援**：Gateway 支援 video_generate 和 music_generate 工具事件轉發
+- **Cron --tools**：cron job 支援 per-job 工具白名單
+- **webchat.chatHistoryMaxChars**：新增 webchat 歷史最大字元數配置

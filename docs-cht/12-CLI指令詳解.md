@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.3.31` | Node.js `>=22.16.0`
+> 版本：`2026.4.5` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.3.31 或更新版本
+# 應顯示 2026.4.5 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1768,4 +1768,71 @@ openclaw agent --message "運行自動化測試" --json --timeout 300
 
 ---
 
-*本文件基於 OpenClaw `2026.3.31` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+## 新增與變更指令（2026.4.5）
+
+### TaskFlow 指令（原 ClawFlow）
+
+背景任務系統更名為 TaskFlow，指令相應更新：
+
+```bash
+# 列出所有 TaskFlow 任務
+openclaw tasks list
+
+# 顯示特定任務詳情
+openclaw tasks show <task-id>
+
+# 取消任務
+openclaw tasks cancel <task-id>
+
+# 任務健康狀態
+openclaw tasks status
+```
+
+### Exec Approvals 相關
+
+```bash
+# Windows exec approval 支援 argPattern 白名單
+openclaw config set tools.exec.argPatterns '["git *", "npm *"]'
+
+# 查看 exec approval 設定
+openclaw config get tools.exec
+```
+
+### Cron 工具白名單
+
+```bash
+# 設定 cron job per-job 工具白名單
+openclaw config set cron.jobs[0].tools '["web_search", "memory_search"]'
+```
+
+### 新增 Agent 預設參數
+
+```bash
+# 設定 agent 預設推理參數
+openclaw config set agents.defaults.params.temperature 0.7
+
+# 設定 compaction 通知使用者
+openclaw config set agents.defaults.compaction.notifyUser true
+```
+
+### Video/Music 生成
+
+```bash
+# agent 對話中可使用 video_generate 和 music_generate 工具
+# 需要對應提供者（Runway/xAI/Alibaba/Qwen 或 ComfyUI）
+openclaw agent --message "生成一段 5 秒的日落影片"
+```
+
+### 其他變更
+
+| 指令/選項 | 變更 |
+|-----------|------|
+| `openclaw doctor --fix` | 新增 legacy config alias 修復能力 |
+| `openclaw models status` | 顯示新增提供者（StepFun、Fireworks、Bedrock Mantle 等） |
+| `openclaw memory status` | 顯示 Dreaming 記憶系統狀態 |
+| `openclaw channels status` | 支援 QA Lab 頻道狀態顯示 |
+| `openclaw plugins list` | 顯示 Plugin Config TUI 支援狀態 |
+
+---
+
+*本文件基於 OpenClaw `2026.4.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
