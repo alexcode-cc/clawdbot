@@ -1111,3 +1111,45 @@ Provider 系統經歷大規模重構：
 - **GPT Personality Overlay**：OpenAI 可選 GPT 個性覆蓋
 - **Lobster Managed TaskFlow**：Lobster 管理的 TaskFlow 模式
 - **Lobster In-Process Workflows**：Lobster 程序內工作流
+
+## Agent 改善（2026.4.8）
+
+### 新功能
+
+- **Infer CLI**：新增 `openclaw infer` 一級推理工作流指令，支援腳本化批次推理
+- **Pluggable Compaction Provider**：compaction 透過 registry 支援可插拔 LLM provider
+- **Compaction Checkpoints**：Gateway compaction 檢查點，斷線後可從檢查點恢復
+- **Prompt Cache Context Engine**：prompt-cache runtime context 暴露給 context engines
+- **Memory Prompt Helper**：context engine 新增 memory prompt helper
+- **Agent Prompt Override**：runtime 動態覆蓋 agent 提示詞
+- **Heartbeat Controls**：支援停用 heartbeat guidance，heartbeat 確保回到主 session
+
+### 新提供者
+
+- **Arcee AI**：新增 Arcee AI 提供者插件（OpenRouter 後端）
+- **Google Gemma 4**：新增 Gemma 4 模型支援
+- **Z.AI GLM-5.1**：Z.AI 預設模型更新至 GLM-5.1
+- **Ollama Vision Auto-detect**：從 /api/show 自動偵測視覺能力
+
+### Memory Wiki 系統
+
+- **Belief-layer Digests**：信念層摘要，記憶片段聚合為結構化知識摘要
+- **Claim Health Reports**：知識聲明健康報告
+- **Compiled Digest Retrieval**：編譯摘要檢索
+- **Slot-aware Dreaming**：多 agent 環境下 dreaming 配置互不干擾
+- **Session Ingestion 改善**：時間戳分桶和游標式 session 攝取
+
+### 安全修復
+
+- **Proxy/SSRF 全面修復**：Slack proxy、SSRF guard 誤判、DNS pinning、NO_PROXY 語義
+- **Env Blocklist 擴充**：Java、Rust、Cargo 工具鏈敏感變數封鎖
+- **Secret Rotation Session Invalidation**：secret rotation 後失效 WS sessions
+- **Node Reconnect Re-pairing**：node 重連 command 升級需重新配對
+
+### 其他改善
+
+- **Compaction 無限迴圈修復**：tool use 中止後 compaction 不再無限迴圈
+- **Tool-result Overflow Recovery**：工具結果溢出恢復加強
+- **Phase-aware History**：加強 phase-aware 歷史記錄
+- **LightContext Subagents**：衍生 subagent 遵從 lightContext 設定
+- **Heartbeat Transcript Race Fix**：修復 heartbeat transcript 截斷競態

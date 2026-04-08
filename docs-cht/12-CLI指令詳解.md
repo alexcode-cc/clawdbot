@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.4.5` | Node.js `>=22.16.0`
+> 版本：`2026.4.8` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.4.5 或更新版本
+# 應顯示 2026.4.8 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1833,6 +1833,32 @@ openclaw agent --message "生成一段 5 秒的日落影片"
 | `openclaw channels status` | 支援 QA Lab 頻道狀態顯示 |
 | `openclaw plugins list` | 顯示 Plugin Config TUI 支援狀態 |
 
+## 新增與變更指令（2026.4.8）
+
+### Infer CLI — 一級推理工作流
+
+```bash
+# 單次推理請求
+openclaw infer "分析這段程式碼的時間複雜度"
+
+# 指定模型
+openclaw infer --model anthropic/claude-sonnet-4-6 "翻譯這段文字"
+
+# JSON 輸出（適合管線整合）
+openclaw infer --json "列出 5 個常見的設計模式"
+```
+
+新增 `openclaw infer` 作為一級推理指令，適合腳本化批次處理和管線整合。
+
+### 其他 2026.4.8 變更
+
+| 指令/選項 | 變更 |
+|-----------|------|
+| `openclaw models status` | 新增 Arcee AI、Gemma 4、GLM-5.1 提供者顯示 |
+| `openclaw memory status` | 顯示 Memory Wiki 和 Dreaming slot-aware 狀態 |
+| `openclaw doctor --fix` | Stale Codex overrides shadow OAuth 警告（#40143） |
+| `openclaw qa-lab` | 一鍵啟動 QA Lab Docker 環境 |
+
 ---
 
-*本文件基於 OpenClaw `2026.4.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+*本文件基於 OpenClaw `2026.4.8` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

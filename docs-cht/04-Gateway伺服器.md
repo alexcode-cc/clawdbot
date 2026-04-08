@@ -586,3 +586,28 @@ Control UI dashboard 經過全面翻新，新增：
 - **Video/Music 生成 Gateway 支援**：Gateway 支援 video_generate 和 music_generate 工具事件轉發
 - **Cron --tools**：cron job 支援 per-job 工具白名單
 - **webchat.chatHistoryMaxChars**：新增 webchat 歷史最大字元數配置
+
+## Gateway 改善（2026.4.8）
+
+### 安全
+
+- **Secret Rotation Session 失效**：shared-token/password WS sessions 在 secret rotation 後立即失效（#62350）
+- **SSRF Guard 修正**：SSRF guard 不再誤拒操作者配置的合法代理主機名（#62312）
+- **Exec Approval Config 保護**：Gateway exec approval 配置路徑保護（#62001）
+- **Node Reconnect Re-pairing**：node 重連 command 升級需重新配對（#62658）
+- **Container Bind 收緊**：收緊容器綁定預設值（#61818）
+- **Browser SSRF Redirect**：瀏覽器 SSRF 重定向防護加強（#62355）
+- **Cross-origin Redirect Body Drop**：跨域 unsafe-method 重定向移除 request body（#62357）
+
+### 穩定性
+
+- **Compaction Checkpoints**：compaction 檢查點支援，斷線後可恢復
+- **Compaction 無限迴圈修復**：tool use 中止後 compaction 不再無限迴圈（#62600）
+- **/tts Audio in Webchat**：Control UI webchat 顯示 /tts 音訊（#61598）
+- **Daemon Permission 處理**：permission-denied bus 錯誤時跳過 machine-scope fallback（#62337）
+- **ThreadId Announce 傳遞**：sessions_send announce 正確傳遞 threadId（#62758）
+
+### 功能
+
+- **Pluggable Compaction**：可插拔壓縮 provider registry（#56224）
+- **Webhooks TaskFlow Bridge**：新增 bundled webhooks TaskFlow bridge 插件（#61892）
