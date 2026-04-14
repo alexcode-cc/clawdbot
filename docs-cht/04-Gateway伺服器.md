@@ -611,3 +611,24 @@ Control UI dashboard 經過全面翻新，新增：
 
 - **Pluggable Compaction**：可插拔壓縮 provider registry（#56224）
 - **Webhooks TaskFlow Bridge**：新增 bundled webhooks TaskFlow bridge 插件（#61892）
+
+---
+
+## Gateway 改善（2026.4.12）
+
+### 啟動與排程
+
+- **Deferred Cron/Heartbeat Activation**：延遲 cron 與 heartbeat 啟動，直到 gateway 完全就緒
+- **Scheduled Services Defer**：排程服務延遲啟動以避免競爭條件
+- **MCP Loopback Lazy Start**：MCP loopback server 改為惰性啟動，減少冷啟動開銷
+
+### 穩定性
+
+- **Subagent Completion Dedupe**：子代理完成事件去重，避免重複處理（completion dedupe）
+- **IdempotencyKey**：引入冪等鍵機制防止重複操作
+- **Orphaned Agent Dir Warning**：偵測並警告孤立的 agent 目錄
+
+### macOS Gateway
+
+- **Chokidar Glob 修復**：修復 macOS 上 chokidar glob 監視問題
+- **Parallels Gateway Fallback**：macOS Parallels 環境 gateway 回退機制改善

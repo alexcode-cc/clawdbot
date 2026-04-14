@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.4.8` | Node.js `>=22.16.0`
+> 版本：`2026.4.12` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.4.8 或更新版本
+# 應顯示 2026.4.12 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1861,4 +1861,36 @@ openclaw infer --json "列出 5 個常見的設計模式"
 
 ---
 
-*本文件基於 OpenClaw `2026.4.8` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+## CLI 新增指令（2026.4.12）
+
+### `openclaw exec-policy`
+
+新增本地執行策略管理指令：
+
+```bash
+# 查看目前執行策略
+openclaw exec-policy show
+
+# 設定執行策略
+openclaw exec-policy set --policy <policy-name>
+
+# 列出可用策略
+openclaw exec-policy list
+```
+
+控制 Agent 可執行的命令範圍和安全邊界。
+
+### `/trace` 切換
+
+TUI 中新增 `/trace` 斜線指令，可在對話中即時切換 Active Memory Recall 的追蹤診斷模式，方便除錯記憶檢索流程。
+
+### 其他 2026.4.12 變更
+
+| 指令/選項 | 變更 |
+|-----------|------|
+| `openclaw models status` | 新增 LM Studio 提供者顯示 |
+| `openclaw memory status` | 顯示 Active Memory Recall 狀態與 grounded REM 資訊 |
+
+---
+
+*本文件基於 OpenClaw `2026.4.12` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

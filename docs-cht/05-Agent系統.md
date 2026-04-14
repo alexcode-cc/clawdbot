@@ -1153,3 +1153,53 @@ Provider 系統經歷大規模重構：
 - **Phase-aware History**：加強 phase-aware 歷史記錄
 - **LightContext Subagents**：衍生 subagent 遵從 lightContext 設定
 - **Heartbeat Transcript Race Fix**：修復 heartbeat transcript 截斷競態
+
+## Agent 改善（2026.4.12）
+
+### 新功能
+
+- **LM Studio 整合**：新增 LM Studio 本地模型提供者，支援 header-auth 認證（#53248）
+- **Pluggable Agent Harness**：可插拔 agent harness registry，支援 Codex app-server 等多元 runtime 後端
+- **Local Exec-Policy CLI**：新增 `openclaw exec-policy` 本地指令管理 exec 執行策略（#64050）
+- **Plugin Text Transforms**：插件可註冊文字轉換能力
+- **Active Memory Recall Plugin**：獨立 recall plugin + QMD recall-to-search 策略（#63286）
+- **/trace 切換**：Active Memory 追蹤診斷指令
+- **Character Eval**：QA 角色評估系統（vibes eval、model options、並行化、報告）
+
+### Plugin Activation Planning
+
+- **Manifest-based Activation**：透過 manifest 描述符驅動啟動規劃
+- **Narrow Loading**：CLI、Provider、Channel 三維按需載入（#65120, #65259, #65429）
+- **Setup Descriptors**：manifest 新增 activation 和 setup 描述符（#64780）
+- **Owner Trust Policy**：集中化 manifest owner trust 策略（#65459）
+
+### Active Memory 與 Dreaming
+
+- **Grounded REM**：加強 REM extraction 接地性，新增 backfill lane（#63273, #63297）
+- **Workspace 隔離**：dreaming narrative sessions 按 workspace 隔離（#61674）
+- **Lexical Fallback 改善**：改進無嵌入環境下的搜尋品質（#65395）
+- **Memory Wiki Unicode**：slug 支援 Unicode 字元（#64742）
+- **Belief-Layer 解耦**：Digest promotion 與 session-corpus pass 解耦
+
+### Video Generation 增強
+
+- **Seedance 2**：新增 Seedance 2 fal 影片模型
+- **HeyGen Video Agent**：新增 HeyGen video-agent 模型
+- **URL-only Delivery**：支援僅 URL 的影片交付（#61988）
+- **進階選項**：providerOptions、inputAudios、imageRoles（#61987）
+
+### 安全修復
+
+- **busybox/toybox 移除**：從 interpreter-like safe bins 移除（#65713）
+- **Shell Wrapper 偵測擴大**：封鎖 env-argv assignment injection（#65717）
+- **Approval 空 Approver 漏洞**：修復空 approver 清單意外授權問題（#65714）
+- **OAuth URL 注入**：修復 Windows cmd.exe 注入（#64161）
+- **CDP Source-range**：sandbox 預設強制 CDP source-range 限制（#61404）
+
+### 其他改善
+
+- **Codex OAuth Scopes 保留**：保留 Codex OAuth scopes（#64713）
+- **OpenAI Heartbeat Overlay**：加強 heartbeat overlay guidance（#65148）
+- **Subagent Completion 去重**：去重重複的 completion 通知（#61525）
+- **Gemini Tool Schema 清理**：清理 required fields（#64284）
+- **llama.cpp Overflow 偵測**：偵測 context overflow（#64196）
