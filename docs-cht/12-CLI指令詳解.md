@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.4.29` | Node.js `>=22.16.0`
+> 版本：`2026.5.2` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.4.29 或更新版本
+# 應顯示 2026.5.2 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,7 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.4.29）
+## CLI 改善（2026.4.22–2026.5.2）
 
 ### 聊天內建模型註冊（2026.4.22）
 
@@ -2018,4 +2018,14 @@ openclaw setup
 - **`openclaw logs --follow`**：Gateway **瞬斷自動重連**（退避與 JSON **notice**）（#74782、#75059、#75372）。  
 - **`doctor --fix`**：在其他驗證仍失敗時仍可套用 **安全 legacy migration**（如 **`agents.defaults.llm`**）（#76798、#76800）。
 
-*本文件基於 OpenClaw `2026.4.29` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+### 2026.5.2（精選）
+
+- **`openclaw gateway restart`**：**`--force`**、**`--wait`**；啟動前修復 **過時 managed gateway service**。  
+- **`openclaw proxy validate`**：proxy 設定／連通性／允許目的地預檢（#73438）。  
+- **`openclaw models list --provider`**：未設定提供者仍可見 **catalog／registry fallback** 列（#75517）。  
+- **`openclaw models set`／`set-image`**：**禁止 `--agent`**（#68391）。  
+- **`openclaw skills check --agent`**：每個 agent 的模型／指令可見性（#75983）。  
+- **`voicecall`**：委派 Gateway runtime；長操作 **operation-id polling**（見 changelog）。  
+- **Update／status**：beta channel 解析、bundle **`plugins.allow`** 與 legacy **`openclaw tool`** token、繼承 service marker **僅在 daemon 仍活時阻擋替換**（#75729）等。
+
+*本文件基於 OpenClaw `2026.5.2` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

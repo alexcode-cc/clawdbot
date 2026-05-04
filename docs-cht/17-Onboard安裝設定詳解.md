@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.4.29` | Node.js `>=22.16.0`
+> 版本：`2026.5.2` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.4.29 或更新版本
+# 應顯示 2026.5.2 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,7 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.4.29）
+## 安裝與設定改善（2026.4.22–2026.5.2）
 
 ### 自動安裝缺失插件（2026.4.22）
 
@@ -1513,6 +1513,13 @@ openclaw doctor --fix
 
 - **Doctor**：插件載入懶路徑、優先 `dist`，例行 doctor 時間顯著下降  
 
+### Manual setup／import／staging（2026.5.2 精選）
+
+- **Manual setup**：跳過 flows 時 **只 stage config-selected** 插件 runtime deps（不再預設拉全套預設插件依賴）。  
+- **`--import-from`**：**non-interactive** 時確實跑 **migration import**（不再靜默略過）。  
+- **Post-install doctor**：daemon 存在時用 **managed profile／state paths** 跑 repair（避免修到 caller shell）。  
+- **插件／ClawHub**：版本化 artifact digest、resolver **決策在先**、npm-pack **`.tgz`** 路徑、registry hash **manifest metadata**（見 changelog）。
+
 ---
 
-*本文件基於 OpenClaw `2026.4.29` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.2` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

@@ -1382,7 +1382,7 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.4.29）
+## Agent 改善（2026.4.22–2026.5.2）
 
 ### 2026.4.22（精選）
 
@@ -1453,3 +1453,18 @@ Provider 系統經歷大規模重構：
 - **Bootstrap**：待處理 **`BOOTSTRAP.md`** 與截斷提示留於 **Project Context**，不混進 WebChat user context（#76946）。  
 - **Presentation**：**理由文字**自 **rich presentation** **剔淨**再經 message tool 發送（防隱藏規劃外洩）。  
 - **PDF／media factories**：遇 **`tools.deny`** 時 **提早跳過建立**（#76997）。
+
+### 2026.5.2（精選）
+
+- **Runtime registry 重用**：請求時刻重用 **啟動載入插件 registry**（providers、tools、channel actions、web／capability／memory／migration）；**memo** transcript replay-policy 與 provider extra-params（維持 transport hook／custom-env）。  
+- **`agents.defaults.skipOptionalBootstrapFiles`**：略過選用 workspace bootstrap 檔而不關閉必填 workspace setup（#62110）。  
+- **`heartbeat_respond`**：**結構化** heartbeat 工具輸出（#75765）。  
+- **Codex**：動態工具 **native-first**；可見管道未設定時預設 **`message` tool**（#75308、#75765）。  
+- **GPT-5／SSE**：預設 API-key session **SSE Responses**，除非明確選 WebSocket（修復無模型事件類問題）。  
+- **Failover**：工具執行中觸發的 **run-level timeout** **不**再誤觸發模型 fallback／timeout compaction（#75873）。  
+- **Compaction**：**z.ai／openrouter z-ai／GLM gateway** 連續回合保留前文（#76056）。  
+- **Tool loop**：critical **circuit breaker** 以 **blocked tool result** 回傳，避免模型無限重試。  
+- **Prompt／dispatch**：快取 **stable system prompt prefix**；重用 prompt-report tool schema 統計（#75999）。  
+- **Sessions**：heartbeat 後保留既有 runtime model／context window（#75452）；**malformed tool args repair** 擴及 Codex／Azure OpenAI Responses（#75154）。  
+- **Commitments**：heartbeat target none 時 follow-up **內部化**、due heartbeat **禁用工具**、佇列與過期策略硬化（見 changelog）。  
+- **Embedded runner**：`abortable` wrapper 抽出以避免 hang 後閉包留住 transcript／subscription（#74182）。

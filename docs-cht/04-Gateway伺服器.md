@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`main` `CHANGELOG` → Unreleased**（發佈時版本號可能命名為較新系列）；小節標題 **`（2026.4.27）`** 保留為該批 Gateway 條目時間標記——**繁體文件全域版本**請以 **`2026.4.29`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**下文 `## Gateway 改善（2026.5.2）`** 對 **`## 2026.5.2`**；本節標題 **`（2026.4.27）`** 保留為先前 **Unreleased** 時期條目的時間標記——**繁體文件全域版本**請以 **`2026.5.2`**（README／頁尾／API `version`）為準。
 
 ### 設定與啟動效能
 
@@ -766,3 +766,37 @@ Control UI dashboard 經過全面翻新，新增：
 - **Canvas URL**：保留 **Gateway TLS scheme** 於瀏覽器 canvas 連結與 **bind 後**之 mount 日誌。  
 - **`logging.file`**：路徑前導 **`~`** 正規化後再建檔（#73587）。  
 - **LaunchAgent**：保留 **`.env` 託管鍵**於 env 檔；**managed keys** 與 operator secrets **跨 re-stage** 行為調整（#75374、#76860）。
+
+---
+
+## Gateway 改善（2026.5.2）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.2`**；完整主題見 **`docs-cht/commit-analyze-20260502.md`**。
+
+### 啟動／RPC／連線／診斷
+
+- **Secrets preflight**：可跳過插件背書 **auth-profile overlay**，縮短 readiness（reload／OAuth 恢復仍可用 overlay）。  
+- **`gateway restart`**：**`--force`**、**`--wait`**；記錄作用中 task run id；逾時視為強制重啟（#68327 脈絡）。  
+- **`$include`**：**`OPENCLAW_INCLUDE_ROOTS`** 核准目錄可讀檔，預設仍限制設定目錄。  
+- **通道啟動 fan-out**：至多 **四個** channel／account handoff；Bonjour **ciao self-probe** 競態恢復（#75687）。  
+- **定價 fetch**：延後至 ready 路徑後；shutdown **中止**進行中定價請求並避免 shutdown 後寫快取（#74128、#72208）。  
+- **穩定性 bundle**：bounded **redacted startup error**（#75797）。
+
+### Sessions／tasks／transcripts／chat history
+
+- **`sessions.list`**：大型 store **輕量 compaction checkpoint／索引**，維持輪詢可負擔。  
+- **Session-store writer**：集中寫入槽與快取借用，降 **`sessions.json`** 鎖與重讀（#68554）。  
+- **Transcript 鎖**：**`acquireTimeoutMs`** 統一政策；預設等待 **60s**（#75894）。  
+- **Bounded／async transcript IO**：詳情、歷史、artifact、compaction、subscribe 等路徑 **流式／分段讀**，降低 OOM（見 changelog 多條）。  
+- **Chat history**：依請求視窗 bound transcript read，避免「只要一小頁卻載入整份超大 log」。
+
+### Status／CLI／macOS 服務
+
+- **`gateway start`**：修復 **過時 managed service**（指到舊版／缺 binary／暫存 installer path）。  
+- **Probe 失敗**：輸出具體 **下一步**（service、設定、listener-owner、log）（#75944 脈絡）。  
+- **LaunchAgent PATH**：寫入 **canonical system PATH**，不再保留舊 plist PATH（Volta／asdf／fnm／pnpm 不再污染子程序 Node）（#75233）。
+
+### Sidecars／pricing／models
+
+- **Early RPC**：sessions.create／send／abort、agent.wait、tools.effective 等在 **可重試 startup-sidecars** 錯誤時回同一語意（#76012）。  
+- **`models.list`**：catalog discovery stall 時維持預設視圖響應；**`--all`** 仍等待完整目錄（#75297）。

@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.4.29` | Node.js `>=22.16.0`
+> 版本：`2026.5.2` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1163,7 +1163,7 @@ Context compaction 期間可選收到通知（#67830）：
 
 ---
 
-## TUI 指令改善（2026.4.22–2026.4.29）
+## TUI 指令改善（2026.4.22–2026.5.2）
 
 ### 無 Gateway 內嵌模式（2026.4.22）
 
@@ -1205,4 +1205,10 @@ Context compaction 期間可選收到通知（#67830）：
 - **`/side`**：**`/btw`** 的 **別名**（側問）。  
 - **`/think`**：DeepSeek V4 等 **`xhigh`／`max`** 選項於 **非預設模型** session 仍可見（#76482）。
 
-*本文件基於 OpenClaw `2026.4.29` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+### 2026.5.2（精選）
+
+- **Heartbeat**：可使用 **`heartbeat_respond`** **結構化工具**紀錄安靜結果或通知文字（#75765）（斜線／自動 heartbeat 流程見英文文件）。  
+- **TUI／setup**：context-window warmup **跳過完整 provider normalize**；Terminal hatch bootstrap **有界**，避免大型 registry 冷啟卡死（#76241）。  
+- **`/model`**：direct／inline 確認文案標示 **session-scoped**（非預設選擇）。
+
+*本文件基於 OpenClaw `2026.5.2` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
