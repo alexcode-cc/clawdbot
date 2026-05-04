@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { MANIFEST_KEY } from "../../compat/legacy-names.js";
+import { isPrereleaseSemverVersion, parseRegistryNpmSpec } from "../../infra/npm-registry-spec.js";
 import { resolveOpenClawPackageRootSync } from "../../infra/openclaw-root.js";
 import { listChannelCatalogEntries } from "../../plugins/channel-catalog-registry.js";
 import { resolveChannelAwareNpmSpec } from "../../plugins/channel-npm-spec.js";
@@ -40,6 +41,7 @@ export type ChannelPluginCatalogEntry = {
   id: string;
   pluginId?: string;
   origin?: PluginOrigin;
+  trustedSourceLinkedOfficialInstall?: boolean;
   meta: ChannelMeta;
   install: ChannelPluginCatalogInstall;
   installSource?: PluginInstallSourceInfo;
@@ -204,7 +206,7 @@ function loadOfficialCatalogEntries(options: CatalogOptions): ChannelPluginCatal
       ? loadCatalogEntriesFromPaths(officialPaths)
       : loadOfficialCatalogEntriesFromPaths(officialPaths);
   return [...builtInEntries, ...fileEntries]
-    .map((entry) => buildExternalCatalogEntry(entry))
+    .map((entry) => buildExternalCatalogEntry(entry, { trustedSourceLinkedOfficialInstall: true }))
     .filter((entry): entry is ChannelPluginCatalogEntry => Boolean(entry));
 }
 
@@ -245,11 +247,21 @@ function resolveInstallInfo(params: {
   workspaceDir?: string;
 }): ChannelPluginCatalogEntry["install"] | null {
   const clawhubSpec = normalizeOptionalString(params.install?.clawhubSpec);
-  const npmSpec = resolveChannelAwareNpmSpec({
-    npmSpec: params.install?.npmSpec,
-    packageName: params.packageName,
-    packageVersion: params.packageVersion,
-  });
+  let npmSpec =
+    normalizeOptionalString(params.install?.npmSpec) ?? normalizeOptionalString(params.packageName);
+  const packageVersion = normalizeOptionalString(params.packageVersion);
+  const parsedNpmSpec = npmSpec ? parseRegistryNpmSpec(npmSpec) : null;
+  const expectedPackageName = normalizeOptionalString(params.packageName);
+  const parsedPackageName = expectedPackageName ? parseRegistryNpmSpec(expectedPackageName) : null;
+  if (
+    npmSpec &&
+    packageVersion &&
+    isPrereleaseSemverVersion(packageVersion) &&
+    parsedNpmSpec?.selectorKind === "none" &&
+    (!parsedPackageName || parsedNpmSpec.name === parsedPackageName.name)
+  ) {
+    npmSpec = `${parsedNpmSpec.name}@${packageVersion}`;
+  }
   if (!clawhubSpec && !npmSpec) {
     return null;
   }
@@ -303,6 +315,7 @@ function buildCatalogEntryFromManifest(params: {
   packageVersion?: string;
   packageDir?: string;
   origin?: PluginOrigin;
+  trustedSourceLinkedOfficialInstall?: boolean;
   workspaceDir?: string;
   channel?: PluginPackageChannel;
   install?: PluginPackageInstall;
@@ -333,6 +346,9 @@ function buildCatalogEntryFromManifest(params: {
     id,
     ...(pluginId ? { pluginId } : {}),
     ...(params.origin ? { origin: params.origin } : {}),
+    ...(params.trustedSourceLinkedOfficialInstall
+      ? { trustedSourceLinkedOfficialInstall: true }
+      : {}),
     meta,
     install,
     installSource: describePluginInstallSource(install, {
@@ -341,11 +357,18 @@ function buildCatalogEntryFromManifest(params: {
   };
 }
 
-function buildExternalCatalogEntry(entry: ExternalCatalogEntry): ChannelPluginCatalogEntry | null {
+function buildExternalCatalogEntry(
+  entry: ExternalCatalogEntry,
+  options?: {
+    trustedSourceLinkedOfficialInstall?: boolean;
+  },
+): ChannelPluginCatalogEntry | null {
   const manifest = entry[MANIFEST_KEY];
   return buildCatalogEntryFromManifest({
+    pluginId: manifest?.plugin?.id,
     packageName: entry.name,
     packageVersion: entry.version,
+    trustedSourceLinkedOfficialInstall: options?.trustedSourceLinkedOfficialInstall,
     channel: manifest?.channel,
     install: manifest?.install,
   });
