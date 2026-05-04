@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.2` | Node.js `>=22.16.0`
+> 版本：`2026.5.3` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.2 或更新版本
+# 應顯示 2026.5.3 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,7 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.2）
+## 安裝與設定改善（2026.4.22–2026.5.3）
 
 ### 自動安裝缺失插件（2026.4.22）
 
@@ -1520,6 +1520,13 @@ openclaw doctor --fix
 - **Post-install doctor**：daemon 存在時用 **managed profile／state paths** 跑 repair（避免修到 caller shell）。  
 - **插件／ClawHub**：版本化 artifact digest、resolver **決策在先**、npm-pack **`.tgz`** 路徑、registry hash **manifest metadata**（見 changelog）。
 
+### trust／catalog／repair（2026.5.3 精選）
+
+- **官方 catalog**：optional **web-search／插件**選擇可走 **trusted official install**（npm security scanning 對齊）。  
+- **WeCom／騰訊元宝**：third-party catalog **映射 published plugin id**，通過 expected-plugin 驗證。  
+- **Doctor**：缺少之 **官方插件**（Discord／Brave 等）於 repair **自動安裝／enable**；失敗時 **保留設定**（#76872）。  
+- **`openclaw-mac wizard`**：敏感步驟 **termios no-echo**（#76698）。
+
 ---
 
-*本文件基於 OpenClaw `2026.5.2` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.3` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

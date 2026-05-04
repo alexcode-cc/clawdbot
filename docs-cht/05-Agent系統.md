@@ -1382,7 +1382,7 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.2）
+## Agent 改善（2026.4.22–2026.5.3）
 
 ### 2026.4.22（精選）
 
@@ -1468,3 +1468,17 @@ Provider 系統經歷大規模重構：
 - **Sessions**：heartbeat 後保留既有 runtime model／context window（#75452）；**malformed tool args repair** 擴及 Codex／Azure OpenAI Responses（#75154）。  
 - **Commitments**：heartbeat target none 時 follow-up **內部化**、due heartbeat **禁用工具**、佇列與過期策略硬化（見 changelog）。  
 - **Embedded runner**：`abortable` wrapper 抽出以避免 hang 後閉包留住 transcript／subscription（#74182）。
+
+### 2026.5.3（精選）
+
+- **Bundled file-transfer**：**`file_fetch`／`dir_list`／`dir_fetch`／`file_write`**；路徑預設拒絕、**16 MB／趟**、symlink 預設關（#74742）。  
+- **`/steer`**／**`/side`**：與 **progress streaming** 同一發行切段正式列入 changelog **Changes**（見 **`06-通訊頻道`**）。  
+- **PDF／media deny**：effective deny 時 **不建 factory**（#76773）（**2026.5.3 Changes** 正式條列）。  
+- **Streaming 回覆**：chunk 上 **刷新 guarded fetch timeout**；真正逾時 **顯式錯誤**（#76307）。  
+- **Idle 成本断路**：連續 **idle timeout** 無完成進度時 **中止重試**（付費呼叫防失控）（#76293）。  
+- **Compaction**：可選 **bundled compaction notifier hook**；自動 compaction 後 **無可見結尾**時 **retry 一次**（#76651）。  
+- **不完整回合**：工具鏈後 **缺最終 assistant 文字**時 **警告**（#76477）。  
+- **Fallback transcript**：embedded failover **抑制重複 user write**（#63696）。  
+- **Reply metadata**：reply target **標成目前使用者訊息目標**（#76817）。  
+- **`tools.profile: full`**：含 **optional plugin tools**（browser 等）（#76507）。  
+- **Arcee Trinity Large Thinking**：標為 **tool-incompatible** 以對齊請求形狀（#62851）。

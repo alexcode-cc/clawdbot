@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**下文 `## Gateway 改善（2026.5.2）`** 對 **`## 2026.5.2`**；本節標題 **`（2026.4.27）`** 保留為先前 **Unreleased** 時期條目的時間標記——**繁體文件全域版本**請以 **`2026.5.2`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.3）`**（**`## 2026.5.3`**）；**`## Gateway 改善（2026.5.2）`** 對 **`## 2026.5.2`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.3`**（README／頁尾／API `version`）為準。
 
 ### 設定與啟動效能
 
@@ -771,7 +771,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.5.2）
 
-> 對齊 **`CHANGELOG.md` → `## 2026.5.2`**；完整主題見 **`docs-cht/commit-analyze-20260502.md`**。
+> 對齊 **`CHANGELOG.md` → `## 2026.5.2`**；完整主題見 **`docs-cht/commit-analyze-20260502.md`**；**2026.5.3** 增量見 **`## Gateway 改善（2026.5.3）`**／**`commit-analyze-20260503.md`**。
 
 ### 啟動／RPC／連線／診斷
 
@@ -800,3 +800,31 @@ Control UI dashboard 經過全面翻新，新增：
 
 - **Early RPC**：sessions.create／send／abort、agent.wait、tools.effective 等在 **可重試 startup-sidecars** 錯誤時回同一語意（#76012）。  
 - **`models.list`**：catalog discovery stall 時維持預設視圖響應；**`--all`** 仍等待完整目錄（#75297）。
+
+---
+
+## Gateway 改善（2026.5.3）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.3`**；完整主題見 **`docs-cht/commit-analyze-20260503.md`**（**Fixes** 區與 **2026.5.2** 條目有版面承載重疊時以該檔說明為準）。
+
+### 啟動／lazy-load／效能
+
+- **按需載入**：插件／runtime **discovery**、**cron**、**channel-config schema metadata**、**shutdown-hook**、**restart sentinel**、**maintenance timer**、**sessions**、**模型 metadata** 等延後至 **need／ready** 路徑；削減 **plugin auto-enable** 重複工作；startup **CPU／profile** 控制（見 changelog Changes）。
+
+### Sessions／chat／responses
+
+- **`sessions.list`**：**輕量列**——title／preview hydrate **有界**、快取 manifest **model-id** 正規化；**chat turn** 之 **`sessions.changed`** **不全表 reload**（#76676）。  
+- **Chat history**：超大回合以 **省略占位**保留語意、避免巨型 JSONL **同步解析卡頓**。  
+- **`/v1/responses`**：單回合 **多個 client tool call** 全數透出（#52288）。  
+- **`session.sendPolicy=deny`**：僅在 **`deliver: true`** 時強制拒絕（#73381）。
+
+### 更新／watch／Linux
+
+- **`pnpm gateway:watch`**：子程序啟動失敗時 **單次** **`doctor --fix --non-interactive`** 後重試。  
+- **套件更新**：拒絕在 **使用中 gateway 行程樹**內發起 **自我更新**（#75691）；**beta** 服務刷新語意調整；**`plugin-runtime-deps`** 過時目錄 **postinstall prune**。  
+- **Bonjour**：**macOS** 預設開 **LAN multicast**；他平台保留 **`plugins enable bonjour`** 顯式啟動（#74209）；**卡死 announcing** 後 **停用廣告**以免事件迴圈飽和。
+
+### Cron／diagnostics
+
+- **Cron**：lazy startup **競態**修正；**manual `cron.run` ID** 寫回歷史；**`jobs-state.json`** 修復結果 **persist**。  
+- **診斷**：長時間運行之 **active-work** 警告 **節流**；預設主控台 **降噪**（結構化事件仍保留）；**無進展卡死**後 **abort-drain embedded runs**。

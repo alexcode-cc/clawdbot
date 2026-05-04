@@ -137,7 +137,7 @@
 
 ## 5. 基礎建設／QA／發布
 
-- **Windows Blacksmith testbox**、**release validation**（含 **2026.5.2 updater** native module swap **後續驗證**）、多條 **QA live**／**Matrix**／**Slack** 硬化。  
+- **Windows Blacksmith testbox**、**release validation**（含 **2026.5.3 updater** native module swap **後續驗證**）、多條 **QA live**／**Matrix**／**Slack** 硬化。  
 - **Maintainer**：預設經 GitHub **verified commit API** 推 PR head（需明確 override 才允許未簽協定 push）。  
 - **文件**：**Google Meet ElevenLabs voice**、**Pi transcript ownership**、**Crabbox maintainer** 等補述。
 
