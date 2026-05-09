@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.5` | Node.js `>=22.16.0`
+> 版本：`2026.5.7` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.5 或更新版本
+# 應顯示 2026.5.7 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,7 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.5）
+## CLI 改善（2026.4.22–2026.5.7）
 
 ### 聊天內建模型註冊（2026.4.22）
 
@@ -2054,4 +2054,13 @@ openclaw setup
 - **`openclaw channels`**：裸 parent-help 指令略過 config、proxy、channel-option catalog、banner-config 與 plugin startup bootstrap，列印 help 後快速退出。
 - **Plugin install/update**：official plugin sync、managed npm-root peer repair、source-only runtime warning 與 corrupt plugin record 容錯更明確。
 
-*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+### 2026.5.6–2026.5.7（精選）
+
+- **`openclaw cron list/show --json`**：新增 computed **`status`** 欄位，外部工具可直接讀取 disabled／running／ok／error／skipped／idle。
+- **`openclaw channels list`**：改為 channel-only；新增 **`--all`** 顯示 bundled 與 catalog channels；輸出 installed／configured／enabled state；model auth／usage 移到 `models auth list`、`status`、`models list`。
+- **`openclaw doctor --fix`**：修復 cron jobs 中壞的 `payload.model` sentinel；同時保留有效 OpenAI／Codex routes，避免過度 rewrite。
+- **`openclaw tasks`／Gateway reload**：stale CLI run-context tasks 與 channel hot-reload deferrals 會被 reconciliation 清理，避免 reload 永久卡住。
+- **`openclaw plugins`**：managed plugin install／rollback／repair／uninstall 使用 absolute POSIX npm lifecycle shell；source cleanup 與 external setup runtime repair 更穩。
+- **`openclaw infer model run`**：Codex probe 錯誤細節更可見；HEIC model-run 檔案會正規化處理。
+
+*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

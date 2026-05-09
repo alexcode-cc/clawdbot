@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.5.5` | Node.js `>=22.16.0`
+> 版本：`2026.5.7` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1163,7 +1163,7 @@ Context compaction 期間可選收到通知（#67830）：
 
 ---
 
-## TUI 指令改善（2026.4.22–2026.5.5）
+## TUI 指令改善（2026.4.22–2026.5.7）
 
 ### 無 Gateway 內嵌模式（2026.4.22）
 
@@ -1232,4 +1232,12 @@ Context compaction 期間可選收到通知（#67830）：
 - **Runtime 可見性**：`openclaw status` 與 `openclaw sessions` 的 rows 顯示 selected agent runtime／harness，與聊天端 `/status` runtime line 對齊。
 - **Channels help fast path**：裸 `openclaw channels` parent-help 不載入通道插件 bootstrap，列印 help 後快速返回。
 
-*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+### 2026.5.6–2026.5.7（精選）
+
+- **`/btw` usage placeholder**：缺少問題時的 usage placeholder 加上 brackets，避免 outbound channel sanitization 把提示吃掉。
+- **`/new`／reset skills**：reset 會清掉 cached skills snapshots，TUI／通道 session 可在 skills 變更後重新顯示最新技能。
+- **Context reset freshness**：context engine cache 在 source history shrink 後失效，降低 TUI reset 後仍看到舊上下文的風險。
+- **Native command owner enforcement**：native command handlers 遵守 owner enforcement，TUI／通道原生命令權限語意更一致。
+- **Cron／Tasks 狀態**：CLI JSON status 與 stale task reconciliation 改善背景任務狀態，TUI 操作與外部工具較不需自行推導。
+
+*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*

@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.5` | Node.js `>=22.16.0`
+> 版本：`2026.5.7` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.5 或更新版本
+# 應顯示 2026.5.7 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,7 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.5）
+## 安裝與設定改善（2026.4.22–2026.5.7）
 
 ### 自動安裝缺失插件（2026.4.22）
 
@@ -1545,6 +1545,15 @@ openclaw doctor --fix
 - **Gateway token shadowing**：doctor 提醒 `OPENCLAW_GATEWAY_TOKEN` 可能遮蔽不同 active gateway token source，但避免同 token 誤報。
 - **iOS private LAN setup**：private LAN／`.local` gateway 可用 setup-code 或 manual `ws://`；Tailscale／public route 仍維持 `wss://`。
 
+### stale config／external plugin／doctor（2026.5.6–2026.5.7 精選）
+
+- **Externalized channel recovery**：onboard 可從 stale `channels.<id>` config 透過 trusted catalog fallback 安裝缺失的 externalized channel plugin，避免殘留 appId／token 讓 setup 卡在「plugin not available」。
+- **Managed plugin npm shell**：plugin install／rollback／repair／uninstall 使用 absolute POSIX npm lifecycle shell，受限 PATH 環境下 cleanup 更穩。
+- **Doctor/OpenAI routes**：`doctor --fix` 保留有效 OpenAI／Codex routes，只在支援的 Codex OAuth recovery path 中修復，避免更新後破壞 subscription-auth setups。
+- **Cron repair**：`doctor --fix` 會移除 cron job 中壞的 `payload.model` sentinel，並修復 stale future `nextRunAtMs`，避免 daily timezone-aware jobs 卡在舊未來日期。
+- **Optional plugin warning**：Gateway 對缺失但可安裝的 optional plugin-owned capability 只記 warning，讓 onboarding／doctor 負責安裝或 enable，不讓 startup dead-end。
+- **Security overrides in plugin roots**：managed external plugin npm roots 會套用 OpenClaw npm security overrides，讓 hoisted plugin dependencies 繼承 host package hardening。
+
 ---
 
-*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

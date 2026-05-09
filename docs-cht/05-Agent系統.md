@@ -1382,7 +1382,7 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.5）
+## Agent 改善（2026.4.22–2026.5.7）
 
 ### 2026.4.22（精選）
 
@@ -1502,3 +1502,12 @@ Provider 系統經歷大規模重構：
 - **Generated media**：attachment-style message tool action 視為已完成 chat send，避免已上傳生成檔後又送 duplicate fallback media；announce-agent pending 期間也避免 async video／music completion 直接 fallback 重複交付。
 - **Auth profile fallback**：format-level rejection 不再讓 provider 進 cooldown，避免模型名稱不支援時阻斷其他 fallback profile 嘗試。
 - **TUI session restore**：heartbeat-poisoned main session 可由 doctor 修復；TUI 不再把 heartbeat session 當 remembered chat session。
+
+### 2026.5.6–2026.5.7（精選）
+
+- **Context cache invalidation**：context engine 在 source history shrink 或 assembly failure 後 invalid cached assembled context views，避免 session reset 後重用 stale pre-reset history。
+- **Compaction reserve clamp**：compaction summary reserve tokens 會 clamp 到每個模型 output limit，高上下文 compaction 不再送出無效 `max_tokens`。
+- **Skills snapshot reset**：`/new` 與 `sessions.reset` 清除 cached skills snapshots，使長期 channel sessions 在 skills 變更後重建可見工具／技能清單。
+- **Inline skill authorization**：auto-reply inline skill tool dispatch 經 before-tool-call authorization hooks gate，避免 inline action 繞過工具授權。
+- **Subagent retention**：completed session-mode subagent registry rows 尊重 **`agents.defaults.subagents.archiveAfterMinutes`**，不再硬編碼 5 分鐘 TTL。
+- **Delivery truthfulness**：outbound delivery 沒有 adapter result 時回報 **`deliverySucceeded=false`**，不再讓 empty／claimed delivery path 假裝成功。

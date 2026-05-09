@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.5）`**（**`## 2026.5.5`**）；**`## Gateway 改善（2026.5.4）`** 對 **`## 2026.5.4`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.5`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.6–2026.5.7）`**（**`## 2026.5.6`**／**`## 2026.5.7`**）；**`## Gateway 改善（2026.5.5）`** 對 **`## 2026.5.5`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.7`**（README／頁尾／API `version`）為準。
 
 ### 設定與啟動效能
 
@@ -876,3 +876,22 @@ Control UI dashboard 經過全面翻新，新增：
 - **Event-loop degraded 判定**：快速重複 health/status sample 不再只因單次 CPU/utilization 標記 degraded，需累積 sustained sampling window。
 - **Gateway status uptime**：`/status` 顯示 compact Gateway process uptime 與 host system uptime，方便從聊天端判斷重啟與主機存活時間。
 - **Token shadowing**：`doctor` 會提醒 `OPENCLAW_GATEWAY_TOKEN` 可能遮蔽不同 active `gateway.auth.token` source，但同一 env token 不誤報。
+
+---
+
+## Gateway 改善（2026.5.6–2026.5.7）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.6`** 與 **`## 2026.5.7`**；完整主題見 **`docs-cht/commit-analyze-20260507.md`**。
+
+### Fetch／optional plugin startup／tasks
+
+- **Web fetch timeout cleanup**：guarded dispatcher 在 request timeout 後 bounded cleanup，使 timed-out fetch 回工具錯誤，不再留下 Gateway tool lane active。
+- **Runtime fetch headers**：SDK／guarded／proxy fetch path 會移除第三方 symbol metadata；debug proxy replay 也會正規化 captured header dictionaries。
+- **Optional plugin startup**：設定指向已知可安裝但目前不可用的 optional plugin-owned capability（例如 web_search provider 或 channel）時，Gateway 維持啟動、記錄 config warning，交由 `openclaw doctor --fix` 安裝或啟用。
+- **Task reload blocker**：stale CLI run-context tasks 與 bound channel hot-reload deferrals 會被 reconciliation 清理，避免 Discord／Slack／Telegram reload 被舊 task record 永久阻塞。
+
+### Sessions／transcripts／reset
+
+- **Daily rollover transcript**：gateway-agent session rollover 改變 session id 時會持久化新的 generated transcript file，同時保留 custom transcript paths。
+- **Skills snapshot reset**：`/new` 與 `sessions.reset` 清掉 cached skills snapshots，長生命週期 channel session 在 skills 變更後會重建可見 skill list。
+- **Context view freshness**：source history shrink 或 context assembly failure 時會 invalid cached assembled views，避免 reset 後沿用舊歷史。
