@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.5.4` | Node.js `>=22.16.0`
+> 版本：`2026.5.5` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1163,7 +1163,7 @@ Context compaction 期間可選收到通知（#67830）：
 
 ---
 
-## TUI 指令改善（2026.4.22–2026.5.4）
+## TUI 指令改善（2026.4.22–2026.5.5）
 
 ### 無 Gateway 內嵌模式（2026.4.22）
 
@@ -1224,4 +1224,12 @@ Context compaction 期間可選收到通知（#67830）：
 - **`/model` runtime 提示**：模型被 runtime allowlist 擋住時，錯誤會包含可執行的 additive allowlist repair command；Telegram／Mattermost model picker 也明確說明只改 session model，不改 runtime。
 - **Embedded runs**：post-compaction loop guard 命中時會以結構化原因中止，避免 TUI 卡在重複工具呼叫後的無限 compaction loop。
 
-*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+### 2026.5.5（精選）
+
+- **Interactive launch**：互動 TUI launch 跳過 generic CLI respawn wrapper；terminal loss 時乾淨退出，避免留下 orphaned `openclaw-tui` process。
+- **Heartbeat session restore**：TUI 不再把 heartbeat session 當作 remembered chat session；既有 heartbeat-poisoned default main session 可由 `doctor --fix` 搬到 recovery keys。
+- **Session picker recency**：session picker bound 到 recent rows；active session refresh 使用 exact lookup，避免 dusty store 在啟動時 hydrate 數週前 transcript。
+- **Runtime 可見性**：`openclaw status` 與 `openclaw sessions` 的 rows 顯示 selected agent runtime／harness，與聊天端 `/status` runtime line 對齊。
+- **Channels help fast path**：裸 `openclaw channels` parent-help 不載入通道插件 bootstrap，列印 help 後快速返回。
+
+*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*

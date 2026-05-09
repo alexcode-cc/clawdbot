@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.4` | Node.js `>=22.16.0`
+> 版本：`2026.5.5` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.4 或更新版本
+# 應顯示 2026.5.5 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,7 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.4）
+## CLI 改善（2026.4.22–2026.5.5）
 
 ### 聊天內建模型註冊（2026.4.22）
 
@@ -2044,4 +2044,14 @@ openclaw setup
 - **`openclaw channels login --channel whatsapp`**：登入 QR 與 outcome 經 active runtime 輸出，避免 stdout 直寫在 restart socket 中遺失。
 - **Mantis QA**：新增／補強 **Slack desktop smoke**、desktop screenshot artifact、Testbox lease id 與 runtime env forwarding。
 
-*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+### 2026.5.5（精選）
+
+- **`openclaw update --channel dev`**：dev-channel preflight lint 改為 opt-in 且受限；fetch failure 後乾淨停止，不再繼續後續 update steps。
+- **`openclaw status`／`openclaw sessions`**：session rows 顯示 selected agent runtime／harness，終端狀態與 `/status` runtime line 對齊。
+- **`openclaw gateway status --deep`**：顯示 supervisor restart handoff 與 JSON details，service-managed clean restart 不再像不透明 stopped-service。
+- **`openclaw doctor --deep`**：回報近期 supervisor restart handoffs；`doctor --fix` 可修復 heartbeat-poisoned default main session store entry 與 stale TUI restore pointer。
+- **`openclaw sessions cleanup`**：常規清理會 prune unreferenced transcript、compaction checkpoint 與 trajectory artifacts，避免 gateway restart／crash orphan 持續累積。
+- **`openclaw channels`**：裸 parent-help 指令略過 config、proxy、channel-option catalog、banner-config 與 plugin startup bootstrap，列印 help 後快速退出。
+- **Plugin install/update**：official plugin sync、managed npm-root peer repair、source-only runtime warning 與 corrupt plugin record 容錯更明確。
+
+*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

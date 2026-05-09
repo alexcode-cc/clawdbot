@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.4` | Node.js `>=22.16.0`
+> 版本：`2026.5.5` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.4 或更新版本
+# 應顯示 2026.5.5 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,7 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.4）
+## 安裝與設定改善（2026.4.22–2026.5.5）
 
 ### 自動安裝缺失插件（2026.4.22）
 
@@ -1535,6 +1535,16 @@ openclaw doctor --fix
 - **WhatsApp allowlist**：setup／pairing allowlist 接受 E.164、JID、`whatsapp:`，但會正規化為 WhatsApp digit-only phone ids。
 - **Windows Git hint**：npm plugin install 若遇 **`spawn git ENOENT`**，會給出安裝 Git 並加入 PATH 的具體提示。
 
+### update／doctor／plugin repair（2026.5.5 精選）
+
+- **Official plugin update**：host update 會同步已安裝的官方 npm／ClawHub 插件，即使 disabled 或曾 exact-pinned；第三方插件 pin 保留。
+- **Managed npm-root repair**：更新前修復 stale managed npm-root `openclaw` peer packages；shared-root install／update／uninstall 後重新確認 plugin-local peer links。
+- **Corrupt plugin records**：package update 遇 corrupt managed plugin record 時仍可完成 core update，並回報 plugin repair path。
+- **Source-only diagnostics**：缺 compiled runtime output 的 source-only TypeScript package 會被診斷成 publisher packaging 問題，指向 update／reinstall 或 disable／uninstall。
+- **Doctor sessions**：`doctor --fix` 可搬移 heartbeat-poisoned default main session store entries 並清掉 stale TUI restore pointers。
+- **Gateway token shadowing**：doctor 提醒 `OPENCLAW_GATEWAY_TOKEN` 可能遮蔽不同 active gateway token source，但避免同 token 誤報。
+- **iOS private LAN setup**：private LAN／`.local` gateway 可用 setup-code 或 manual `ws://`；Tailscale／public route 仍維持 `wss://`。
+
 ---
 
-*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.5` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

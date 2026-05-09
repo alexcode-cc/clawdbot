@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.4）`**（**`## 2026.5.4`**）；**`## Gateway 改善（2026.5.3）`** 對 **`## 2026.5.3`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.4`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.5）`**（**`## 2026.5.5`**）；**`## Gateway 改善（2026.5.4）`** 對 **`## 2026.5.4`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.5`**（README／頁尾／API `version`）為準。
 
 ### 設定與啟動效能
 
@@ -852,3 +852,27 @@ Control UI dashboard 經過全面翻新，新增：
 - **`sessions.list`／CLI list**：大型 store 的列資料建構、thinking enrichment、輸出行數與 truncation metadata 持續有界化。
 - **Control UI**：dashboard breadcrumb 顯示 active agent；Cron New Job sidebar 可摺疊；manual token fallback、responsiveness diagnostics、long task／animation frame event log 進入除錯路徑。
 - **WebChat**：重複文字 bubble 可合併、chat controls/composer 跨手機／平板／桌面寬度重新打磨，滾動時可隱藏控制列。
+
+---
+
+## Gateway 改善（2026.5.5）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.5`**；完整主題見 **`docs-cht/commit-analyze-20260505.md`**。
+
+### Shutdown／maintenance／restart handoff
+
+- **快速重啟清理**：Gateway close 期間取消 delayed post-ready maintenance，並抑制 quick restart 後的 maintenance／cron startup，避免孤立 timer。
+- **結構化 shutdown 結果**：shutdown warning 與 HTTP close timeout 會經 **`ShutdownResult`** 回報，保留 lifecycle hook hardening 的同時提高診斷可讀性。
+- **Supervisor handoff 可見性**：`openclaw gateway status --deep` 與 `openclaw doctor --deep` 顯示近期 supervisor restart handoff，service-managed clean exit 不再被誤解成 stopped-service。
+
+### HTTP／OpenAI-compatible／media sidecar
+
+- **OpenAI-compatible streaming**：`/v1/chat/completions` 接受 streaming headers 後立刻送出 assistant role SSE chunk，避免冷啟 agent setup 讓 client 拿到 bodyless 200。
+- **HTTP sidecar 邊界**：非媒體／非 OpenAI-compatible route 不再載入 outgoing-image media handler；disabled route 可快速回 404。
+- **Model catalog cache**：read-only catalog 無可用模型時會快取空結果至 reload，避免 TUI／control-plane refresh loop 重複敲 plugin metadata。
+
+### Health／status／diagnostics
+
+- **Event-loop degraded 判定**：快速重複 health/status sample 不再只因單次 CPU/utilization 標記 degraded，需累積 sustained sampling window。
+- **Gateway status uptime**：`/status` 顯示 compact Gateway process uptime 與 host system uptime，方便從聊天端判斷重啟與主機存活時間。
+- **Token shadowing**：`doctor` 會提醒 `OPENCLAW_GATEWAY_TOKEN` 可能遮蔽不同 active `gateway.auth.token` source，但同一 env token 不誤報。

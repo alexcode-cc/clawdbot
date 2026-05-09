@@ -1382,7 +1382,7 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.4）
+## Agent 改善（2026.4.22–2026.5.5）
 
 ### 2026.4.22（精選）
 
@@ -1493,3 +1493,12 @@ Provider 系統經歷大規模重構：
 - **Codex harness**：usage-limit reset details 會送回聊天；OpenClaw-owned runtime failure notice 走 tool-only source-reply mode，減少 Telegram 等通道靜默失敗。
 - **OpenAI Responses**：direct OpenAI Responses model 預設走 **SSE** 而非 WebSocket auto-selection，避免 WebSocket path 卡住時整個 Pi runtime chat turn 停滯。
 - **媒體工具**：async media completion mediation、duplicate generated media attachment 防護、OpenAI Codex audio transcription routing 與 active Codex chat model 的 transcription default 對齊。
+
+### 2026.5.5（精選）
+
+- **Context engine 邊界**：隱藏的 OpenClaw runtime-context custom messages 不再送進 context-engine assemble、afterTurn、ingest hooks，讓 transcript reconstruction plugins 只看見真實對話訊息。
+- **Session lifecycle hooks**：Control UI 明確建立 session 時才觸發 documented `/new` command 與 lifecycle hooks；SDK parent-session create 不再誤觸發 session-memory／custom hook capture。
+- **Session memory capture**：重複 `/new` 或 `/reset` 在同一分鐘產生 fallback memory filename 時會加 collision suffix；reset memory capture 移出 command reply path，`llmSlug: true` 才啟用模型生成檔名 slug。
+- **Generated media**：attachment-style message tool action 視為已完成 chat send，避免已上傳生成檔後又送 duplicate fallback media；announce-agent pending 期間也避免 async video／music completion 直接 fallback 重複交付。
+- **Auth profile fallback**：format-level rejection 不再讓 provider 進 cooldown，避免模型名稱不支援時阻斷其他 fallback profile 嘗試。
+- **TUI session restore**：heartbeat-poisoned main session 可由 doctor 修復；TUI 不再把 heartbeat session 當 remembered chat session。
