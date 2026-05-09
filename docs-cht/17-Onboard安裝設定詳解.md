@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.3` | Node.js `>=22.16.0`
+> 版本：`2026.5.4` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.3 或更新版本
+# 應顯示 2026.5.4 或更新版本
 ```
 
 ---
@@ -1471,19 +1471,19 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.3）
+## 安裝與設定改善（2026.4.22–2026.5.4）
 
 ### 自動安裝缺失插件（2026.4.22）
 
-- Onboarding／setup 過程會 **自動安裝**缺少的 provider／channel 插件，無需先手動 **`plugins`** 復原  
+- Onboarding／setup 過程會 **自動安裝**缺少的 provider／channel 插件，無需先手動 **`plugins`** 復原
 
 ### OpenAI Codex 引導變更（2026.4.22）
 
-- **移除**將 **`~/.codex` Codex CLI OAuth** 複製進 agent auth store 的 onboarding／discovery 路徑；請改用 **瀏覽器登入**或**裝置配對**（#70390）  
+- **移除**將 **`~/.codex` Codex CLI OAuth** 複製進 agent auth store 的 onboarding／discovery 路徑；請改用 **瀏覽器登入**或**裝置配對**（#70390）
 
 ### Feishu 首次載入（2026.4.23）
 
-- Feishu setup 經 **setup-only barrel**，避免首次即載入 Lark SDK runtime（#70339）  
+- Feishu setup 經 **setup-only barrel**，避免首次即載入 Lark SDK runtime（#70339）
 
 ### WhatsApp QuickStart／依賴（2026.4.23）
 
@@ -1495,9 +1495,9 @@ openclaw doctor --fix
 
 ### Onboarding 冷路徑（2026.4.25）
 
-- 首次設定：**config 讀取**、相容提示、post-model sanity **維持冷 metadata**，除非使用者選「瀏覽全部模型」。  
-- **Provider auth**：manifest-owned 選項經 **scoped setup**，選 Codex browser／device **OAuth** 前不載入全部 provider runtime。  
-- **Auth 後預設模型**：lookup 仍在 **manifest／setup metadata**。  
+- 首次設定：**config 讀取**、相容提示、post-model sanity **維持冷 metadata**，除非使用者選「瀏覽全部模型」。
+- **Provider auth**：manifest-owned 選項經 **scoped setup**，選 Codex browser／device **OAuth** 前不載入全部 provider runtime。
+- **Auth 後預設模型**：lookup 仍在 **manifest／setup metadata**。
 - **Model picker**：skip-auth、provider-scoped 選項不走 **全域 catalog**；provider catalog hook **快取**，大型 registry 後不再卡住。
 
 ### CLI 遷移（2026.4.26）
@@ -1506,27 +1506,35 @@ openclaw doctor --fix
 
 ### Manual setup／互動屏蔽（2026.4.27）
 
-- **Manual setup**：可勾選 **選用官方插件**（ClawHub＋npm fallback）、**Codex 外掛**等（見官方 onboarding 文件）。  
+- **Manual setup**：可勾選 **選用官方插件**（ClawHub＋npm fallback）、**Codex 外掛**等（見官方 onboarding 文件）。
 - **`openclaw onboard`**：敏感輸入 **遮罩**（API key、gateway token、web-search key、skill env 等），避免 **終端卷軸／截圖**外洩。
 
 ### Doctor 插件路徑（2026.4.22）
 
-- **Doctor**：插件載入懶路徑、優先 `dist`，例行 doctor 時間顯著下降  
+- **Doctor**：插件載入懶路徑、優先 `dist`，例行 doctor 時間顯著下降
 
 ### Manual setup／import／staging（2026.5.2 精選）
 
-- **Manual setup**：跳過 flows 時 **只 stage config-selected** 插件 runtime deps（不再預設拉全套預設插件依賴）。  
-- **`--import-from`**：**non-interactive** 時確實跑 **migration import**（不再靜默略過）。  
-- **Post-install doctor**：daemon 存在時用 **managed profile／state paths** 跑 repair（避免修到 caller shell）。  
+- **Manual setup**：跳過 flows 時 **只 stage config-selected** 插件 runtime deps（不再預設拉全套預設插件依賴）。
+- **`--import-from`**：**non-interactive** 時確實跑 **migration import**（不再靜默略過）。
+- **Post-install doctor**：daemon 存在時用 **managed profile／state paths** 跑 repair（避免修到 caller shell）。
 - **插件／ClawHub**：版本化 artifact digest、resolver **決策在先**、npm-pack **`.tgz`** 路徑、registry hash **manifest metadata**（見 changelog）。
 
 ### trust／catalog／repair（2026.5.3 精選）
 
-- **官方 catalog**：optional **web-search／插件**選擇可走 **trusted official install**（npm security scanning 對齊）。  
-- **WeCom／騰訊元宝**：third-party catalog **映射 published plugin id**，通過 expected-plugin 驗證。  
-- **Doctor**：缺少之 **官方插件**（Discord／Brave 等）於 repair **自動安裝／enable**；失敗時 **保留設定**（#76872）。  
+- **官方 catalog**：optional **web-search／插件**選擇可走 **trusted official install**（npm security scanning 對齊）。
+- **WeCom／騰訊元宝**：third-party catalog **映射 published plugin id**，通過 expected-plugin 驗證。
+- **Doctor**：缺少之 **官方插件**（Discord／Brave 等）於 repair **自動安裝／enable**；失敗時 **保留設定**（#76872）。
 - **`openclaw-mac wizard`**：敏感步驟 **termios no-echo**（#76698）。
+
+### externalized／beta／Windows repair（2026.5.4 精選）
+
+- **官方外部插件提示**：設定指到尚未安裝的官方 externalized 插件時，onboarding／doctor 會提供 catalog-backed **`openclaw plugins install <spec>`** 提示，而不是要求移除設定。
+- **Beta channel**：onboarding／doctor-managed plugin install 在 beta channel 會嘗試 **`@beta`** 浮動 spec；持久 install record 仍保留 catalog default。
+- **Peer link repair**：package update／doctor 可修復 external plugin 缺失的 **`openclaw`** peer link，恢復 **`openclaw/plugin-sdk/*`** import。
+- **WhatsApp allowlist**：setup／pairing allowlist 接受 E.164、JID、`whatsapp:`，但會正規化為 WhatsApp digit-only phone ids。
+- **Windows Git hint**：npm plugin install 若遇 **`spawn git ENOENT`**，會給出安裝 Git 並加入 PATH 的具體提示。
 
 ---
 
-*本文件基於 OpenClaw `2026.5.3` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

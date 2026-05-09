@@ -1382,7 +1382,7 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.3）
+## Agent 改善（2026.4.22–2026.5.4）
 
 ### 2026.4.22（精選）
 
@@ -1410,75 +1410,86 @@ Provider 系統經歷大規模重構：
 
 ### 2026.4.24（精選）
 
-- **Heartbeat 提示隔離**：heartbeat 系統提示僅注入 **heartbeat 執行**，不混入一般回合。  
-- **DeepSeek V4**：**V4 Flash／Pro**；預設與 **thinking／replay（後續 tool turn）** 行為修正。  
-- **即時語音**：Talk／Voice Call／Google Meet 可將 **full agent（含工具）** 納入即時語音顧問迴圈。  
-- **Subagent**：傳輸中斷後 **恢復等待**語意強化（transport drop recovery）。  
-- **串流回合**：assistant chunk 僅空白時仍可 **回填最終文字**（#71454）。  
-- **Codex**：對外暴露 **runtime context caps**；Responses 路徑系統提示走 **`instructions`**。  
-- **Copilot**：保留加密 **reasoning item IDs** 於 replay（#71448）。  
-- **Memory**：**hybrid search** 可取得 **分量分數**；**llama** runtime **可選載入**，避免強依賴拉檔錯誤（#71425）。  
+- **Heartbeat 提示隔離**：heartbeat 系統提示僅注入 **heartbeat 執行**，不混入一般回合。
+- **DeepSeek V4**：**V4 Flash／Pro**；預設與 **thinking／replay（後續 tool turn）** 行為修正。
+- **即時語音**：Talk／Voice Call／Google Meet 可將 **full agent（含工具）** 納入即時語音顧問迴圈。
+- **Subagent**：傳輸中斷後 **恢復等待**語意強化（transport drop recovery）。
+- **串流回合**：assistant chunk 僅空白時仍可 **回填最終文字**（#71454）。
+- **Codex**：對外暴露 **runtime context caps**；Responses 路徑系統提示走 **`instructions`**。
+- **Copilot**：保留加密 **reasoning item IDs** 於 replay（#71448）。
+- **Memory**：**hybrid search** 可取得 **分量分數**；**llama** runtime **可選載入**，避免強依賴拉檔錯誤（#71425）。
 - **Tool-result 修剪**：畸形 `{ type: "text" }` 區塊與估算硬化，避免繞過修剪（#34979）。
 
 ### 2026.4.25（精選）
 
-- **Auto-reply dedupe**：replay 不安全失敗後 **標記 dedupe**，避免進度／副作用後 **重複發話**（#69303；見 changelog）。  
-- **bundle-mcp allowlist**：決定 bundled MCP 可用性時 **尊重 allowlist token**。  
-- **Live session fallback**：已知後續 redirect **捷徑跳轉**，少走無關候選（#57471）。  
-- **OpenAI Responses**：**web search** 與 **最小 thinking** 相容修正。  
-- **Subagent**：無 thread 請求者於父 announce **無可見回覆**時，以 **direct fallback** 交付子代理完成結果。  
-- **Cron／exec／heartbeat wake**：以 **transient runtime context** 提交，**不當成使用者可見 prompt** 進 transcript（#66496、#66814）。  
-- **Codex app-server**：native MCP **PreToolUse／PostToolUse／PermissionRequest** 經 **hook relay**；版本需求 **≥ 0.125.0**。  
-- **`agents_list`／預設 slash**：優先露出 **原生 Codex app-server**，勝過模糊選 **Codex ACP**（除非明確 acpx）。  
-- **`agentRuntime.id`**：canonical 設定鍵；doctor 遷移 legacy；Anthropic canonical **走 `claude-cli`** 且不將 CLI backend 別名餵給 embedded harness（#71957）。  
+- **Auto-reply dedupe**：replay 不安全失敗後 **標記 dedupe**，避免進度／副作用後 **重複發話**（#69303；見 changelog）。
+- **bundle-mcp allowlist**：決定 bundled MCP 可用性時 **尊重 allowlist token**。
+- **Live session fallback**：已知後續 redirect **捷徑跳轉**，少走無關候選（#57471）。
+- **OpenAI Responses**：**web search** 與 **最小 thinking** 相容修正。
+- **Subagent**：無 thread 請求者於父 announce **無可見回覆**時，以 **direct fallback** 交付子代理完成結果。
+- **Cron／exec／heartbeat wake**：以 **transient runtime context** 提交，**不當成使用者可見 prompt** 進 transcript（#66496、#66814）。
+- **Codex app-server**：native MCP **PreToolUse／PostToolUse／PermissionRequest** 經 **hook relay**；版本需求 **≥ 0.125.0**。
+- **`agents_list`／預設 slash**：優先露出 **原生 Codex app-server**，勝過模糊選 **Codex ACP**（除非明確 acpx）。
+- **`agentRuntime.id`**：canonical 設定鍵；doctor 遷移 legacy；Anthropic canonical **走 `claude-cli`** 且不將 CLI backend 別名餵給 embedded harness（#71957）。
 - **`--thinking minimal`**：對 **gpt-5.5／5.4／5.4-mini／5.2** 等現代 Codex 於請求組裝時對應為 **`low`**，避免浪費首輪（#71946）。
 
 ### 2026.4.26（精選）
 
-- **LSP**：dispose 時 **終止 bundled stdio LSP 樹**（含 `tsserver`）（#72357）。  
-- **`subagents.allowAgents`**：**顯式** `sessions_spawn(agentId=…)` **須列入 allowlist**（#72827）。  
-- **`sessions_spawn(runtime="acp")`**：`acp.dispatch.enabled=false` 時仍允許 **手動** bootstrap turn（#63591）。  
-- **Compaction**：可選 **`agents.defaults.compaction.maxActiveTranscriptBytes`** **預檢**，觸發正常本機 compaction 並 **rotation successor** transcript。  
-- **Tool loop**：偵測視窗 **綁定 active run**；**exec volatile metadata** 不比對；**空 object tool args** → `{}`。  
-- **Claude CLI stream-json**：live session **輸入／輸出格式成對**（#72206）。  
+- **LSP**：dispose 時 **終止 bundled stdio LSP 樹**（含 `tsserver`）（#72357）。
+- **`subagents.allowAgents`**：**顯式** `sessions_spawn(agentId=…)` **須列入 allowlist**（#72827）。
+- **`sessions_spawn(runtime="acp")`**：`acp.dispatch.enabled=false` 時仍允許 **手動** bootstrap turn（#63591）。
+- **Compaction**：可選 **`agents.defaults.compaction.maxActiveTranscriptBytes`** **預檢**，觸發正常本機 compaction 並 **rotation successor** transcript。
+- **Tool loop**：偵測視窗 **綁定 active run**；**exec volatile metadata** 不比對；**空 object tool args** → `{}`。
+- **Claude CLI stream-json**：live session **輸入／輸出格式成對**（#72206）。
 - **Session lock**：**cold bootstrap／插件／工具**完成後才 acquire **session write lock**，避免前置卡住阻塞 fallback。
 
 ### 2026.4.27（精選）
 
-- **`/steer`**：session **閒置**時 **佇列外轉向**目前 run（#76934）；**`/side`** 為 **`/btw`** 別名。  
-- **Verbose／progress**：預設 **精簡**工具摘要；**`agents.defaults.toolProgressDetail: "raw"`** 還原 raw command／detail（多通道 progress draft 通用）。  
-- **Subagent announce**：direct completion fallback **保留完整分組子結果**（#77120 思路）。  
-- **Message tool**：同目標多筆送出後仍可帶 **獨立結尾評論**；**string thread id** 去重路由 **避免數字精度遺失**（#76915 等）。  
-- **Compaction／WebChat**：overflow retry 僅在使用者 turn **確寫入**後；**Pi 管理**助理 turn **不重複寫入**（#76424、#77033）。  
-- **Bootstrap**：待處理 **`BOOTSTRAP.md`** 與截斷提示留於 **Project Context**，不混進 WebChat user context（#76946）。  
-- **Presentation**：**理由文字**自 **rich presentation** **剔淨**再經 message tool 發送（防隱藏規劃外洩）。  
+- **`/steer`**：session **閒置**時 **佇列外轉向**目前 run（#76934）；**`/side`** 為 **`/btw`** 別名。
+- **Verbose／progress**：預設 **精簡**工具摘要；**`agents.defaults.toolProgressDetail: "raw"`** 還原 raw command／detail（多通道 progress draft 通用）。
+- **Subagent announce**：direct completion fallback **保留完整分組子結果**（#77120 思路）。
+- **Message tool**：同目標多筆送出後仍可帶 **獨立結尾評論**；**string thread id** 去重路由 **避免數字精度遺失**（#76915 等）。
+- **Compaction／WebChat**：overflow retry 僅在使用者 turn **確寫入**後；**Pi 管理**助理 turn **不重複寫入**（#76424、#77033）。
+- **Bootstrap**：待處理 **`BOOTSTRAP.md`** 與截斷提示留於 **Project Context**，不混進 WebChat user context（#76946）。
+- **Presentation**：**理由文字**自 **rich presentation** **剔淨**再經 message tool 發送（防隱藏規劃外洩）。
 - **PDF／media factories**：遇 **`tools.deny`** 時 **提早跳過建立**（#76997）。
 
 ### 2026.5.2（精選）
 
-- **Runtime registry 重用**：請求時刻重用 **啟動載入插件 registry**（providers、tools、channel actions、web／capability／memory／migration）；**memo** transcript replay-policy 與 provider extra-params（維持 transport hook／custom-env）。  
-- **`agents.defaults.skipOptionalBootstrapFiles`**：略過選用 workspace bootstrap 檔而不關閉必填 workspace setup（#62110）。  
-- **`heartbeat_respond`**：**結構化** heartbeat 工具輸出（#75765）。  
-- **Codex**：動態工具 **native-first**；可見管道未設定時預設 **`message` tool**（#75308、#75765）。  
-- **GPT-5／SSE**：預設 API-key session **SSE Responses**，除非明確選 WebSocket（修復無模型事件類問題）。  
-- **Failover**：工具執行中觸發的 **run-level timeout** **不**再誤觸發模型 fallback／timeout compaction（#75873）。  
-- **Compaction**：**z.ai／openrouter z-ai／GLM gateway** 連續回合保留前文（#76056）。  
-- **Tool loop**：critical **circuit breaker** 以 **blocked tool result** 回傳，避免模型無限重試。  
-- **Prompt／dispatch**：快取 **stable system prompt prefix**；重用 prompt-report tool schema 統計（#75999）。  
-- **Sessions**：heartbeat 後保留既有 runtime model／context window（#75452）；**malformed tool args repair** 擴及 Codex／Azure OpenAI Responses（#75154）。  
-- **Commitments**：heartbeat target none 時 follow-up **內部化**、due heartbeat **禁用工具**、佇列與過期策略硬化（見 changelog）。  
+- **Runtime registry 重用**：請求時刻重用 **啟動載入插件 registry**（providers、tools、channel actions、web／capability／memory／migration）；**memo** transcript replay-policy 與 provider extra-params（維持 transport hook／custom-env）。
+- **`agents.defaults.skipOptionalBootstrapFiles`**：略過選用 workspace bootstrap 檔而不關閉必填 workspace setup（#62110）。
+- **`heartbeat_respond`**：**結構化** heartbeat 工具輸出（#75765）。
+- **Codex**：動態工具 **native-first**；可見管道未設定時預設 **`message` tool**（#75308、#75765）。
+- **GPT-5／SSE**：預設 API-key session **SSE Responses**，除非明確選 WebSocket（修復無模型事件類問題）。
+- **Failover**：工具執行中觸發的 **run-level timeout** **不**再誤觸發模型 fallback／timeout compaction（#75873）。
+- **Compaction**：**z.ai／openrouter z-ai／GLM gateway** 連續回合保留前文（#76056）。
+- **Tool loop**：critical **circuit breaker** 以 **blocked tool result** 回傳，避免模型無限重試。
+- **Prompt／dispatch**：快取 **stable system prompt prefix**；重用 prompt-report tool schema 統計（#75999）。
+- **Sessions**：heartbeat 後保留既有 runtime model／context window（#75452）；**malformed tool args repair** 擴及 Codex／Azure OpenAI Responses（#75154）。
+- **Commitments**：heartbeat target none 時 follow-up **內部化**、due heartbeat **禁用工具**、佇列與過期策略硬化（見 changelog）。
 - **Embedded runner**：`abortable` wrapper 抽出以避免 hang 後閉包留住 transcript／subscription（#74182）。
 
 ### 2026.5.3（精選）
 
-- **Bundled file-transfer**：**`file_fetch`／`dir_list`／`dir_fetch`／`file_write`**；路徑預設拒絕、**16 MB／趟**、symlink 預設關（#74742）。  
-- **`/steer`**／**`/side`**：與 **progress streaming** 同一發行切段正式列入 changelog **Changes**（見 **`06-通訊頻道`**）。  
-- **PDF／media deny**：effective deny 時 **不建 factory**（#76773）（**2026.5.3 Changes** 正式條列）。  
-- **Streaming 回覆**：chunk 上 **刷新 guarded fetch timeout**；真正逾時 **顯式錯誤**（#76307）。  
-- **Idle 成本断路**：連續 **idle timeout** 無完成進度時 **中止重試**（付費呼叫防失控）（#76293）。  
-- **Compaction**：可選 **bundled compaction notifier hook**；自動 compaction 後 **無可見結尾**時 **retry 一次**（#76651）。  
-- **不完整回合**：工具鏈後 **缺最終 assistant 文字**時 **警告**（#76477）。  
-- **Fallback transcript**：embedded failover **抑制重複 user write**（#63696）。  
-- **Reply metadata**：reply target **標成目前使用者訊息目標**（#76817）。  
-- **`tools.profile: full`**：含 **optional plugin tools**（browser 等）（#76507）。  
+- **Bundled file-transfer**：**`file_fetch`／`dir_list`／`dir_fetch`／`file_write`**；路徑預設拒絕、**16 MB／趟**、symlink 預設關（#74742）。
+- **`/steer`**／**`/side`**：與 **progress streaming** 同一發行切段正式列入 changelog **Changes**（見 **`06-通訊頻道`**）。
+- **PDF／media deny**：effective deny 時 **不建 factory**（#76773）（**2026.5.3 Changes** 正式條列）。
+- **Streaming 回覆**：chunk 上 **刷新 guarded fetch timeout**；真正逾時 **顯式錯誤**（#76307）。
+- **Idle 成本断路**：連續 **idle timeout** 無完成進度時 **中止重試**（付費呼叫防失控）（#76293）。
+- **Compaction**：可選 **bundled compaction notifier hook**；自動 compaction 後 **無可見結尾**時 **retry 一次**（#76651）。
+- **不完整回合**：工具鏈後 **缺最終 assistant 文字**時 **警告**（#76477）。
+- **Fallback transcript**：embedded failover **抑制重複 user write**（#63696）。
+- **Reply metadata**：reply target **標成目前使用者訊息目標**（#76817）。
+- **`tools.profile: full`**：含 **optional plugin tools**（browser 等）（#76507）。
 - **Arcee Trinity Large Thinking**：標為 **tool-incompatible** 以對齊請求形狀（#62851）。
+
+### 2026.5.4（精選）
+
+- **Post-compaction loop guard**：`pi-embedded-runner` 在 auto-compaction retry 後觀察相同 **`(tool, args, result)`** 三元組；預設 **3** 次命中後以 **`compaction_loop_persisted`** 中止，可透過 **`tools.loopDetection.enabled`** 與 **`tools.loopDetection.postCompactionGuard.windowSize`** 調整。
+- **工具 allowlist 精準化**：embedded runtime 建構工具族、bundled MCP、LSP runtimes 時會尊重窄 runtime tool allowlist，避免 cron／subagent run 因缺少明確工具或多餘 bootstrap 工作失敗（#77519、#77532）。
+- **Prompt cache 修復**：per-turn runtime context 不再混入一般 chat system prompt；hidden current-turn context 仍可傳遞當前回合狀態，改善一般聊天 continuation 的 prompt-cache reuse（#77431）。
+- **Bootstrap hook**：`agent:bootstrap` hook 注入的 **`BOOTSTRAP.md`** 內容會被視為 pending bootstrap，必要 setup 指令不會被漏出 Project Context（#77501）。
+- **Subagent／messaging**：direct fallback 保留 grouped child results；同目標 message-tool 送出後仍可交付獨立 final commentary；deferred subagent delivery text 更新。
+- **Codex harness**：usage-limit reset details 會送回聊天；OpenClaw-owned runtime failure notice 走 tool-only source-reply mode，減少 Telegram 等通道靜默失敗。
+- **OpenAI Responses**：direct OpenAI Responses model 預設走 **SSE** 而非 WebSocket auto-selection，避免 WebSocket path 卡住時整個 Pi runtime chat turn 停滯。
+- **媒體工具**：async media completion mediation、duplicate generated media attachment 防護、OpenAI Codex audio transcription routing 與 active Codex chat model 的 transcription default 對齊。

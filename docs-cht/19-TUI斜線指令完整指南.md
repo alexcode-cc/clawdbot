@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.5.3` | Node.js `>=22.16.0`
+> 版本：`2026.5.4` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1163,23 +1163,23 @@ Context compaction 期間可選收到通知（#67830）：
 
 ---
 
-## TUI 指令改善（2026.4.22–2026.5.3）
+## TUI 指令改善（2026.4.22–2026.5.4）
 
 ### 無 Gateway 內嵌模式（2026.4.22）
 
-- TUI 支援 **純本機嵌入式**對話流程（不依賴 Gateway），仍受 **插件核准／政策**約束  
+- TUI 支援 **純本機嵌入式**對話流程（不依賴 Gateway），仍受 **插件核准／政策**約束
 
 ### `/models add`（2026.4.22）
 
-- 從對話 **`/models add <provider> <modelId>`** 註冊模型並立即使用  
+- 從對話 **`/models add <provider> <modelId>`** 註冊模型並立即使用
 
 ### `/export-trajectory`（2026.4.22）
 
-- 匯出脫敏軌跡包，供除錯與問題回報（預設本機亦會捕獲軌跡）  
+- 匯出脫敏軌跡包，供除錯與問題回報（預設本機亦會捕獲軌跡）
 
 ### `sessions_list` 篩選（2026.4.22）
 
-- 信箱式：**label／agent／search**；附 **衍生標題／最後訊息預覽**  
+- 信箱式：**label／agent／search**；附 **衍生標題／最後訊息預覽**
 
 ### `/status Runner`（2026.4.22）
 
@@ -1191,29 +1191,37 @@ Context compaction 期間可選收到通知（#67830）：
 
 ### `/tts`、Crestodian 與設定 UX（2026.4.25）
 
-- **`/tts latest`**、**`/tts chat on|off|default`**、**`/tts persona`**（詳見 `06-通訊頻道` 與官方 TTS 文件）。  
+- **`/tts latest`**、**`/tts chat on|off|default`**、**`/tts persona`**（詳見 `06-通訊頻道` 與官方 TTS 文件）。
 - **Crestodian**：首次修復、**全 TUI** 互動、啟動進度、**context mode**、較短問候（#71720、#71760）。
 
 ### Matrix／遷移指令對照（2026.4.26）
 
-- **`openclaw matrix encryption setup`**：**E2EE** 一站式設定（詳見英文 Matrix 文件）。  
+- **`openclaw matrix encryption setup`**：**E2EE** 一站式設定（詳見英文 Matrix 文件）。
 - **`openclaw migrate`**：外部設定匯入（見 **`12-CLI指令詳解`**／官方 migrate 文件）。
 
 ### `/steer`、`/side` 與 `/think`（2026.4.27）
 
-- **`/steer <message>`**：在目前 session **閒置**時對 **進行中 run** 下達 **轉向**（不開新回合）（#76934）。  
-- **`/side`**：**`/btw`** 的 **別名**（側問）。  
+- **`/steer <message>`**：在目前 session **閒置**時對 **進行中 run** 下達 **轉向**（不開新回合）（#76934）。
+- **`/side`**：**`/btw`** 的 **別名**（側問）。
 - **`/think`**：DeepSeek V4 等 **`xhigh`／`max`** 選項於 **非預設模型** session 仍可見（#76482）。
 
 ### 2026.5.2（精選）
 
-- **Heartbeat**：可使用 **`heartbeat_respond`** **結構化工具**紀錄安靜結果或通知文字（#75765）（斜線／自動 heartbeat 流程見英文文件）。  
-- **TUI／setup**：context-window warmup **跳過完整 provider normalize**；Terminal hatch bootstrap **有界**，避免大型 registry 冷啟卡死（#76241）。  
+- **Heartbeat**：可使用 **`heartbeat_respond`** **結構化工具**紀錄安靜結果或通知文字（#75765）（斜線／自動 heartbeat 流程見英文文件）。
+- **TUI／setup**：context-window warmup **跳過完整 provider normalize**；Terminal hatch bootstrap **有界**，避免大型 registry 冷啟卡死（#76241）。
 - **`/model`**：direct／inline 確認文案標示 **session-scoped**（非預設選擇）。
 
 ### 2026.5.3（精選）
 
-- **`/steer`**／**`/side`**：已於 **`CHANGELOG` `2026.5.3` Changes** 與 **`06-通訊頻道`** 串流段落正式對齊（功能延續 **2026.4.27** 文件說明）。  
+- **`/steer`**／**`/side`**：已於 **`CHANGELOG` `2026.5.3` Changes** 與 **`06-通訊頻道`** 串流段落正式對齊（功能延續 **2026.4.27** 文件說明）。
 - **`/think`**：作用中模型 ≠ 預設時仍見 **DeepSeek V4 Pro `xhigh`／`max`**（#76482）（與 heartbeat／Codex 協作提示見 changelog）。
 
-*本文件基於 OpenClaw `2026.5.3` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+### 2026.5.4（精選）
+
+- **Stale-response copy**：TUI stale-response watchdog notice 改為純使用者文案，不再曝露 backend／streaming 內部術語（#77120）。
+- **Long-token sanitizer**：保留 code spans、code blocks、dotted／hyphenated identifiers，避免 TUI 長 token 換行破壞程式碼與識別字（#77335）。
+- **`/verbose`／progress**：`agents.defaults.toolProgressDetail: "raw"` 時，progress draft 可保留 raw command/detail；預設仍使用 compact summaries。
+- **`/model` runtime 提示**：模型被 runtime allowlist 擋住時，錯誤會包含可執行的 additive allowlist repair command；Telegram／Mattermost model picker 也明確說明只改 session model，不改 runtime。
+- **Embedded runs**：post-compaction loop guard 命中時會以結構化原因中止，避免 TUI 卡在重複工具呼叫後的無限 compaction loop。
+
+*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*

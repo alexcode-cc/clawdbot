@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.3` | Node.js `>=22.16.0`
+> 版本：`2026.5.4` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.3 或更新版本
+# 應顯示 2026.5.4 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,7 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.3）
+## CLI 改善（2026.4.22–2026.5.4）
 
 ### 聊天內建模型註冊（2026.4.22）
 
@@ -1978,16 +1978,16 @@ openclaw setup
 
 ### Claude CLI（2026.4.22–2026.4.23）
 
-- **`openclaw claude`（claude-cli）**：預設 **暖 stdio session**；Gateway 重啟或閒置退出後可由儲存的 Claude session **恢復**（見 changelog #69679）  
-- Claude CLI **`bypassPermissions`** 與 OpenClaw **YOLO exec policy** 對齊（2026.4.23）  
+- **`openclaw claude`（claude-cli）**：預設 **暖 stdio session**；Gateway 重啟或閒置退出後可由儲存的 Claude session **恢復**（見 changelog #69679）
+- Claude CLI **`bypassPermissions`** 與 OpenClaw **YOLO exec policy** 對齊（2026.4.23）
 
 ### 軌跡匯出（2026.4.22）
 
-- **`/export-trajectory`**：匯出脫敏軌跡包（對話／事件／提示／artifact），供支援與重現問題  
+- **`/export-trajectory`**：匯出脫敏軌跡包（對話／事件／提示／artifact），供支援與重現問題
 
 ### 除錯（2026.4.22）
 
-- **選用的 CLI 效能計時**：可開啟臨時計時協助 stderr／JSONL 輸出；僅本地除錯，落地前請依官方 CHANGELOG 「CLI/debugging」與說明文件移除探針  
+- **選用的 CLI 效能計時**：可開啟臨時計時協助 stderr／JSONL 輸出；僅本地除錯，落地前請依官方 CHANGELOG 「CLI/debugging」與說明文件移除探針
 
 ### 單會話 Agent 對齊（2026.4.23）
 
@@ -2003,36 +2003,45 @@ openclaw setup
 
 ### 插件／瀏覽器／影像 CLI（2026.4.25）
 
-- **`openclaw plugins registry`**：檢視持久化索引；**`--refresh`** 修復。  
-- **`openclaw browser start --headless`**：一次性本機 managed 瀏覽器啟動（不改持久 `browser` 設定）。  
+- **`openclaw plugins registry`**：檢視持久化索引；**`--refresh`** 修復。
+- **`openclaw browser start --headless`**：一次性本機 managed 瀏覽器啟動（不改持久 `browser` 設定）。
 - **`openclaw infer image generate|edit`**：**`--background`**（泛型）、**`--openai-background`**（OpenAI 別名）；**`infer image edit`** 支援 **`--size`／`--aspect-ratio`／`--resolution`**（與 `capability inspect image.edit` 對齊）。
 
 ### 遷移與 Matrix（2026.4.26）
 
-- **`openclaw migrate`**：**plan／dry-run／JSON**、備份；**Claude Code／Desktop** 與 **Hermes** 設定／記憶／MCP／skills 等匯入。  
+- **`openclaw migrate`**：**plan／dry-run／JSON**、備份；**Claude Code／Desktop** 與 **Hermes** 設定／記憶／MCP／skills 等匯入。
 - **`openclaw matrix encryption setup`**：Matrix **E2EE** 啟用與 recovery 引導。
 
 ### QA／Logs／Doctor（2026.4.27）
 
-- **Mantis QA**：**`pnpm openclaw qa mantis discord-smoke`**、**Slack desktop（Crabbox VNC）** 等 runner；Blacksmith **`tbx_...`** lease 相容。  
-- **`openclaw logs --follow`**：Gateway **瞬斷自動重連**（退避與 JSON **notice**）（#74782、#75059、#75372）。  
+- **Mantis QA**：**`pnpm openclaw qa mantis discord-smoke`**、**Slack desktop（Crabbox VNC）** 等 runner；Blacksmith **`tbx_...`** lease 相容。
+- **`openclaw logs --follow`**：Gateway **瞬斷自動重連**（退避與 JSON **notice**）（#74782、#75059、#75372）。
 - **`doctor --fix`**：在其他驗證仍失敗時仍可套用 **安全 legacy migration**（如 **`agents.defaults.llm`**）（#76798、#76800）。
 
 ### 2026.5.2（精選）
 
-- **`openclaw gateway restart`**：**`--force`**、**`--wait`**；啟動前修復 **過時 managed gateway service**。  
-- **`openclaw proxy validate`**：proxy 設定／連通性／允許目的地預檢（#73438）。  
-- **`openclaw models list --provider`**：未設定提供者仍可見 **catalog／registry fallback** 列（#75517）。  
-- **`openclaw models set`／`set-image`**：**禁止 `--agent`**（#68391）。  
-- **`openclaw skills check --agent`**：每個 agent 的模型／指令可見性（#75983）。  
-- **`voicecall`**：委派 Gateway runtime；長操作 **operation-id polling**（見 changelog）。  
+- **`openclaw gateway restart`**：**`--force`**、**`--wait`**；啟動前修復 **過時 managed gateway service**。
+- **`openclaw proxy validate`**：proxy 設定／連通性／允許目的地預檢（#73438）。
+- **`openclaw models list --provider`**：未設定提供者仍可見 **catalog／registry fallback** 列（#75517）。
+- **`openclaw models set`／`set-image`**：**禁止 `--agent`**（#68391）。
+- **`openclaw skills check --agent`**：每個 agent 的模型／指令可見性（#75983）。
+- **`voicecall`**：委派 Gateway runtime；長操作 **operation-id polling**（見 changelog）。
 - **Update／status**：beta channel 解析、bundle **`plugins.allow`** 與 legacy **`openclaw tool`** token、繼承 service marker **僅在 daemon 仍活時阻擋替換**（#75729）等。
 
 ### 2026.5.3（精選）
 
-- **`openclaw config unset array[index]`**：只刪 **指定索引**（#76290）。  
-- **`openclaw devices approve`**：**operator.admin** 重試語意（#76956）。  
-- **Gateway watch**：dev 子程序 crash 時 **doctor --fix** 後重試。  
+- **`openclaw config unset array[index]`**：只刪 **指定索引**（#76290）。
+- **`openclaw devices approve`**：**operator.admin** 重試語意（#76956）。
+- **Gateway watch**：dev 子程序 crash 時 **doctor --fix** 後重試。
 - **Global Control UI package update**：成功報告前先 **`doctor --non-interactive --fix`**。
 
-*本文件基於 OpenClaw `2026.5.3` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+### 2026.5.4（精選）
+
+- **`openclaw models auth list [--provider <id>] [--json]`**：列出每 agent 儲存的 auth profiles，不輸出 secrets，也避免舊路徑的「too many arguments」錯誤。
+- **`openclaw gateway restart --safe`**：文件化 safe restart 語意；更新後 health probe 會使用已安裝 config 的 local gateway auth。
+- **`openclaw sessions list`**：輸出與 RPC row construction 持續有界化，避免大型 session store 造成 CLI 無界輸出。
+- **`openclaw plugins install`**：官方 externalized channel/provider 缺失時顯示 catalog-backed install hint；Windows 上 npm plugin install 若遇 **`spawn git ENOENT`**，提示安裝 Git 並放入 PATH。
+- **`openclaw channels login --channel whatsapp`**：登入 QR 與 outcome 經 active runtime 輸出，避免 stdout 直寫在 restart socket 中遺失。
+- **Mantis QA**：新增／補強 **Slack desktop smoke**、desktop screenshot artifact、Testbox lease id 與 runtime env forwarding。
+
+*本文件基於 OpenClaw `2026.5.4` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

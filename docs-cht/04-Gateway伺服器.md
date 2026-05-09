@@ -681,14 +681,14 @@ Control UI dashboard 經過全面翻新，新增：
 
 ### Restart continuation 與傳遞
 
-- **持久交接**：將 restart continuation **先入 session-delivery 佇列**再移除 sentinel，避免競態丟失信號。  
-- **崩潰恢復**：重啟後自佇列**恢復未送達 continuation** 工作。  
+- **持久交接**：將 restart continuation **先入 session-delivery 佇列**再移除 sentinel，避免競態丟失信號。
+- **崩潰恢復**：重啟後自佇列**恢復未送達 continuation** 工作。
 - **Wake 後援**：若重啟後無任何 channel route 存活，回退為 **session-only wake**（#70780）。
 
 ### MCP 與關機
 
-- **Shutdown 清理**：Gateway 停止時 **dispose bundled MCP**，使已移除的 `mcp.servers` 子程序可被回收。  
-- **熱重載**：偵測 `mcp.*` 設定變更時 **釋放已快取的 session MCP runtimes**。  
+- **Shutdown 清理**：Gateway 停止時 **dispose bundled MCP**，使已移除的 `mcp.servers` 子程序可被回收。
+- **熱重載**：偵測 `mcp.*` 設定變更時 **釋放已快取的 session MCP runtimes**。
 - **閒置 TTL**：設定 **`mcp.sessionIdleTtlMs`** 以驅逐洩漏的 session runtime。
 
 ### Exec 診斷
@@ -709,15 +709,15 @@ Control UI dashboard 經過全面翻新，新增：
 
 ### Bonjour／mDNS
 
-- **Docker Compose**：bridge 網路預設 **關閉 Bonjour 廣播**；host／macvlan 需 **`OPENCLAW_DISABLE_BONJOUR=0`** 才維持 opt-in（#71879）。  
-- **容器**：偵測容器環境時可 **自動關閉 mDNS 廣告**（見 changelog）。  
+- **Docker Compose**：bridge 網路預設 **關閉 Bonjour 廣播**；host／macvlan 需 **`OPENCLAW_DISABLE_BONJOUR=0`** 才維持 opt-in（#71879）。
+- **容器**：偵測容器環境時可 **自動關閉 mDNS 廣告**（見 changelog）。
 - **失敗退避**：ciao watchdog／probing **不再無限重試**拖垮行程（#69011）。
 
 ### 配對／身分與更新
 
-- **Tailscale**：已認證之 Control UI operator（瀏覽器裝置身分）可 **略過部分 device pairing** 往返（#71986）。  
-- **LaunchAgent**：服務安裝紀錄若偵測 **過期內嵌 gateway auth**，改 **刷新**而非誤報 already-installed（#70752）。  
-- **套件更新**：重啟後 Gateway **版本不符**視為更新失敗（含 fallback／JSON 模式）（#71835）。  
+- **Tailscale**：已認證之 Control UI operator（瀏覽器裝置身分）可 **略過部分 device pairing** 往返（#71986）。
+- **LaunchAgent**：服務安裝紀錄若偵測 **過期內嵌 gateway auth**，改 **刷新**而非誤報 already-installed（#70752）。
+- **套件更新**：重啟後 Gateway **版本不符**視為更新失敗（含 fallback／JSON 模式）（#71835）。
 - **混版二進位**：較舊 openclaw **不可**對較新 config 環境做 **process／service mutation**（#57079）。
 
 ### 環境 Proxy
@@ -731,8 +731,8 @@ Control UI dashboard 經過全面翻新，新增：
 
 ### 握手與啟動路徑
 
-- **`hello-ok`**：初始快照含 **連線客戶端** 與 **presence 版本**。  
-- **前景 Gateway**：略過 CLI **自我 respawn**，降低低記憶體／Node 24 **啟動前 hang**（#72720）。  
+- **`hello-ok`**：初始快照含 **連線客戶端** 與 **presence 版本**。
+- **前景 Gateway**：略過 CLI **自我 respawn**，降低低記憶體／Node 24 **啟動前 hang**（#72720）。
 - **無效插件 schema**：單一插件設定 schema 錯誤時改 **degraded 啟動**；**`openclaw doctor --fix`** 可 **隔離**問題設定（#62976、#70371）。
 
 ### Metadata 重用
@@ -747,24 +747,24 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.3）`**（**`## 2026.5.3`**）；**`## Gateway 改善（2026.5.2）`** 對 **`## 2026.5.2`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.3`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.4）`**（**`## 2026.5.4`**）；**`## Gateway 改善（2026.5.3）`** 對 **`## 2026.5.3`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.4`**（README／頁尾／API `version`）為準。
 
 ### 設定與啟動效能
 
-- **無效設定**：啟動／熱重載 **fail closed**，**不**再自動還原損壞或無法驗證之設定；**`openclaw doctor --fix`** 負責安全遷移（even其他驗證仍失敗時亦尽量套用已知 legacy 清理）（#76798、#76800）。  
-- **延後載入**：**cron runtime**、部分 **discovery**、**shutdown／maintenance timer** 延至 **ready 之後**；縮減 **plugin auto-enable** 重複工作；**native 插件路徑**盡量 **避免 jiti**。  
+- **無效設定**：啟動／熱重載 **fail closed**，**不**再自動還原損壞或無法驗證之設定；**`openclaw doctor --fix`** 負責安全遷移（even其他驗證仍失敗時亦尽量套用已知 legacy 清理）（#76798、#76800）。
+- **延後載入**：**cron runtime**、部分 **discovery**、**shutdown／maintenance timer** 延至 **ready 之後**；縮減 **plugin auto-enable** 重複工作；**native 插件路徑**盡量 **避免 jiti**。
 - **剖析**：Gateway startup benchmark 支援 **`--cpu-prof-dir`**；**`pnpm gateway:watch --benchmark-no-force`** 略過預設埠清理以利基準。
 
 ### Sessions／用量／模型列表
 
-- **`sessions.list`**：**預設有界**回應並附 **truncation metadata**（#77062）；列表列 **thinking／cost** 計算 **memo** 與 **skip** 冗餘工作（#76931）。  
-- **用量**：**`usage.cost`／`sessions.usage`** 改以 **transcript aggregate cache** 服務，附 **stale** 標示（#76650）。  
+- **`sessions.list`**：**預設有界**回應並附 **truncation metadata**（#77062）；列表列 **thinking／cost** 計算 **memo** 與 **skip** 冗餘工作（#76931）。
+- **用量**：**`usage.cost`／`sessions.usage`** 改以 **transcript aggregate cache** 服務，附 **stale** 標示（#76650）。
 - **`models.list` 唯讀路徑**：減少不必要 **runtime provider discovery**（延續 #76382 一族）。
 
 ### Canvas／日誌／安裝
 
-- **Canvas URL**：保留 **Gateway TLS scheme** 於瀏覽器 canvas 連結與 **bind 後**之 mount 日誌。  
-- **`logging.file`**：路徑前導 **`~`** 正規化後再建檔（#73587）。  
+- **Canvas URL**：保留 **Gateway TLS scheme** 於瀏覽器 canvas 連結與 **bind 後**之 mount 日誌。
+- **`logging.file`**：路徑前導 **`~`** 正規化後再建檔（#73587）。
 - **LaunchAgent**：保留 **`.env` 託管鍵**於 env 檔；**managed keys** 與 operator secrets **跨 re-stage** 行為調整（#75374、#76860）。
 
 ---
@@ -775,30 +775,30 @@ Control UI dashboard 經過全面翻新，新增：
 
 ### 啟動／RPC／連線／診斷
 
-- **Secrets preflight**：可跳過插件背書 **auth-profile overlay**，縮短 readiness（reload／OAuth 恢復仍可用 overlay）。  
-- **`gateway restart`**：**`--force`**、**`--wait`**；記錄作用中 task run id；逾時視為強制重啟（#68327 脈絡）。  
-- **`$include`**：**`OPENCLAW_INCLUDE_ROOTS`** 核准目錄可讀檔，預設仍限制設定目錄。  
-- **通道啟動 fan-out**：至多 **四個** channel／account handoff；Bonjour **ciao self-probe** 競態恢復（#75687）。  
-- **定價 fetch**：延後至 ready 路徑後；shutdown **中止**進行中定價請求並避免 shutdown 後寫快取（#74128、#72208）。  
+- **Secrets preflight**：可跳過插件背書 **auth-profile overlay**，縮短 readiness（reload／OAuth 恢復仍可用 overlay）。
+- **`gateway restart`**：**`--force`**、**`--wait`**；記錄作用中 task run id；逾時視為強制重啟（#68327 脈絡）。
+- **`$include`**：**`OPENCLAW_INCLUDE_ROOTS`** 核准目錄可讀檔，預設仍限制設定目錄。
+- **通道啟動 fan-out**：至多 **四個** channel／account handoff；Bonjour **ciao self-probe** 競態恢復（#75687）。
+- **定價 fetch**：延後至 ready 路徑後；shutdown **中止**進行中定價請求並避免 shutdown 後寫快取（#74128、#72208）。
 - **穩定性 bundle**：bounded **redacted startup error**（#75797）。
 
 ### Sessions／tasks／transcripts／chat history
 
-- **`sessions.list`**：大型 store **輕量 compaction checkpoint／索引**，維持輪詢可負擔。  
-- **Session-store writer**：集中寫入槽與快取借用，降 **`sessions.json`** 鎖與重讀（#68554）。  
-- **Transcript 鎖**：**`acquireTimeoutMs`** 統一政策；預設等待 **60s**（#75894）。  
-- **Bounded／async transcript IO**：詳情、歷史、artifact、compaction、subscribe 等路徑 **流式／分段讀**，降低 OOM（見 changelog 多條）。  
+- **`sessions.list`**：大型 store **輕量 compaction checkpoint／索引**，維持輪詢可負擔。
+- **Session-store writer**：集中寫入槽與快取借用，降 **`sessions.json`** 鎖與重讀（#68554）。
+- **Transcript 鎖**：**`acquireTimeoutMs`** 統一政策；預設等待 **60s**（#75894）。
+- **Bounded／async transcript IO**：詳情、歷史、artifact、compaction、subscribe 等路徑 **流式／分段讀**，降低 OOM（見 changelog 多條）。
 - **Chat history**：依請求視窗 bound transcript read，避免「只要一小頁卻載入整份超大 log」。
 
 ### Status／CLI／macOS 服務
 
-- **`gateway start`**：修復 **過時 managed service**（指到舊版／缺 binary／暫存 installer path）。  
-- **Probe 失敗**：輸出具體 **下一步**（service、設定、listener-owner、log）（#75944 脈絡）。  
+- **`gateway start`**：修復 **過時 managed service**（指到舊版／缺 binary／暫存 installer path）。
+- **Probe 失敗**：輸出具體 **下一步**（service、設定、listener-owner、log）（#75944 脈絡）。
 - **LaunchAgent PATH**：寫入 **canonical system PATH**，不再保留舊 plist PATH（Volta／asdf／fnm／pnpm 不再污染子程序 Node）（#75233）。
 
 ### Sidecars／pricing／models
 
-- **Early RPC**：sessions.create／send／abort、agent.wait、tools.effective 等在 **可重試 startup-sidecars** 錯誤時回同一語意（#76012）。  
+- **Early RPC**：sessions.create／send／abort、agent.wait、tools.effective 等在 **可重試 startup-sidecars** 錯誤時回同一語意（#76012）。
 - **`models.list`**：catalog discovery stall 時維持預設視圖響應；**`--all`** 仍等待完整目錄（#75297）。
 
 ---
@@ -813,18 +813,42 @@ Control UI dashboard 經過全面翻新，新增：
 
 ### Sessions／chat／responses
 
-- **`sessions.list`**：**輕量列**——title／preview hydrate **有界**、快取 manifest **model-id** 正規化；**chat turn** 之 **`sessions.changed`** **不全表 reload**（#76676）。  
-- **Chat history**：超大回合以 **省略占位**保留語意、避免巨型 JSONL **同步解析卡頓**。  
-- **`/v1/responses`**：單回合 **多個 client tool call** 全數透出（#52288）。  
+- **`sessions.list`**：**輕量列**——title／preview hydrate **有界**、快取 manifest **model-id** 正規化；**chat turn** 之 **`sessions.changed`** **不全表 reload**（#76676）。
+- **Chat history**：超大回合以 **省略占位**保留語意、避免巨型 JSONL **同步解析卡頓**。
+- **`/v1/responses`**：單回合 **多個 client tool call** 全數透出（#52288）。
 - **`session.sendPolicy=deny`**：僅在 **`deliver: true`** 時強制拒絕（#73381）。
 
 ### 更新／watch／Linux
 
-- **`pnpm gateway:watch`**：子程序啟動失敗時 **單次** **`doctor --fix --non-interactive`** 後重試。  
-- **套件更新**：拒絕在 **使用中 gateway 行程樹**內發起 **自我更新**（#75691）；**beta** 服務刷新語意調整；**`plugin-runtime-deps`** 過時目錄 **postinstall prune**。  
+- **`pnpm gateway:watch`**：子程序啟動失敗時 **單次** **`doctor --fix --non-interactive`** 後重試。
+- **套件更新**：拒絕在 **使用中 gateway 行程樹**內發起 **自我更新**（#75691）；**beta** 服務刷新語意調整；**`plugin-runtime-deps`** 過時目錄 **postinstall prune**。
 - **Bonjour**：**macOS** 預設開 **LAN multicast**；他平台保留 **`plugins enable bonjour`** 顯式啟動（#74209）；**卡死 announcing** 後 **停用廣告**以免事件迴圈飽和。
 
 ### Cron／diagnostics
 
-- **Cron**：lazy startup **競態**修正；**manual `cron.run` ID** 寫回歷史；**`jobs-state.json`** 修復結果 **persist**。  
+- **Cron**：lazy startup **競態**修正；**manual `cron.run` ID** 寫回歷史；**`jobs-state.json`** 修復結果 **persist**。
 - **診斷**：長時間運行之 **active-work** 警告 **節流**；預設主控台 **降噪**（結構化事件仍保留）；**無進展卡死**後 **abort-drain embedded runs**。
+
+---
+
+## Gateway 改善（2026.5.4）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.4`**；完整主題見 **`docs-cht/commit-analyze-20260504.md`**。
+
+### Windows／loopback／啟動
+
+- **Windows loopback**：預設 Gateway listener 在 Windows 僅綁 **`127.0.0.1`**，避免 libuv dual-stack **`::1`** 行為卡住 localhost HTTP（#69701）。
+- **啟動熱路徑**：model-catalog helpers、run-session lookup、QR pairing、TypeBox memory-tool schema、channel plugin barrel import 等延後載入；native-loadable bundled plugin path 盡量不導入 **`jiti`**。
+- **metadata snapshot 重用**：unscoped model catalog／manifest-contract readers 可重用目前 workspace-compatible plugin metadata snapshot，保留 env/config/workspace 相容性檢查。
+
+### 診斷／watch／restart
+
+- **`pnpm gateway:watch`**：新增 startup phase spans、active work labels、stale terminal bridge markers、sync-I/O tracing；benchmark 模式把 trace 導向 log／artifact，避免 terminal 被 stack trace 淹沒。
+- **Safe restart coordinator**：重啟／更新期間用安全協調器與已安裝 config 的 local gateway auth 做 health probe，避免 token/device-auth VPS 被誤判成 port conflict。
+- **process cleanup**：清理 orphaned child processes；Windows command tree timeout kill、Node/npm shim、tmp dir、native path 測試皆補強。
+
+### Sessions／UI RPC
+
+- **`sessions.list`／CLI list**：大型 store 的列資料建構、thinking enrichment、輸出行數與 truncation metadata 持續有界化。
+- **Control UI**：dashboard breadcrumb 顯示 active agent；Cron New Job sidebar 可摺疊；manual token fallback、responsiveness diagnostics、long task／animation frame event log 進入除錯路徑。
+- **WebChat**：重複文字 bubble 可合併、chat controls/composer 跨手機／平板／桌面寬度重新打磨，滾動時可隱藏控制列。
