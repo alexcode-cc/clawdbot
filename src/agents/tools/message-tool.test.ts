@@ -103,6 +103,27 @@ const mocks = vi.hoisted(() => ({
   ),
 }));
 
+type RunMessageActionInput = {
+  agentId?: string;
+  cfg?: unknown;
+  params?: Record<string, unknown>;
+  requesterSenderId?: string;
+  sandboxRoot?: string;
+  senderIsOwner?: boolean;
+  sessionKey?: string;
+  sourceReplyDeliveryMode?: string;
+  toolContext?: {
+    currentChannelId?: string;
+    currentChannelProvider?: string;
+    currentThreadTs?: string;
+    replyToMode?: string;
+  };
+};
+
+function firstRunMessageActionInput(): RunMessageActionInput | undefined {
+  return mocks.runMessageAction.mock.calls.at(0)?.[0] as RunMessageActionInput | undefined;
+}
+
 const openClawToolsFactoryMocks = vi.hoisted(() => {
   const tool = (name: string) => ({
     name,
@@ -243,7 +264,6 @@ function expectStringSchema(
     description?: string;
   },
 ) {
-  expect(schema).toBeTruthy();
   if (!schema || typeof schema !== "object") {
     throw new Error("Expected string schema");
   }
@@ -331,14 +351,7 @@ async function executeSend(params: {
     action: "send",
     ...params.action,
   });
-  return mocks.runMessageAction.mock.calls[0]?.[0] as
-    | {
-        params?: Record<string, unknown>;
-        sandboxRoot?: string;
-        requesterSenderId?: string;
-        senderIsOwner?: boolean;
-      }
-    | undefined;
+  return firstRunMessageActionInput();
 }
 
 describe("message tool secret scoping", () => {
@@ -375,6 +388,22 @@ describe("message tool secret scoping", () => {
     expect(tool?.description).toContain(
       'visible replies to the current source conversation must use action="send"',
     );
+  });
+
+  it("passes source reply delivery mode to the outbound runner", async () => {
+    mockSendResult();
+
+    const input = await executeSend({
+      action: { message: "hi" },
+      toolOptions: {
+        sourceReplyDeliveryMode: "message_tool_only",
+        currentChannelProvider: "webchat",
+        agentSessionKey: "agent:main",
+      },
+    });
+
+    expect(input?.sourceReplyDeliveryMode).toBe("message_tool_only");
+    expect(input?.toolContext?.currentChannelProvider).toBe("webchat");
   });
 
   it("scopes command-time secret resolution to the selected channel/account", async () => {
@@ -475,7 +504,7 @@ describe("message tool secret scoping", () => {
     expect(secretResolveCall.allowedPaths).toEqual(
       new Set(["channels.discord.token", "channels.discord.accounts.ops.token"]),
     );
-    expect(mocks.runMessageAction.mock.calls[0]?.[0]?.cfg).toBe(resolvedConfig);
+    expect(firstRunMessageActionInput()?.cfg).toBe(resolvedConfig);
   });
 });
 
@@ -495,7 +524,7 @@ describe("message tool agent routing", () => {
       message: "hi",
     });
 
-    const call = mocks.runMessageAction.mock.calls[0]?.[0];
+    const call = firstRunMessageActionInput();
     expect(call?.agentId).toBe("alpha");
     expect(call?.sessionKey).toBe("agent:alpha:main");
   });
@@ -518,7 +547,7 @@ describe("message tool agent routing", () => {
       message: "stay in thread",
     });
 
-    const call = mocks.runMessageAction.mock.calls[0]?.[0];
+    const call = firstRunMessageActionInput();
     expect(call?.toolContext?.currentThreadTs).toBe("111.222");
     expect(call?.toolContext?.replyToMode).toBe("all");
   });
@@ -542,7 +571,7 @@ describe("message tool agent routing", () => {
       message: "send at channel level",
     });
 
-    const call = mocks.runMessageAction.mock.calls[0]?.[0];
+    const call = firstRunMessageActionInput();
     expect(call?.toolContext?.currentThreadTs).toBe("111.222");
     expect(call?.toolContext?.replyToMode).toBe("off");
   });
@@ -568,7 +597,7 @@ describe("message tool agent routing", () => {
       message: "stay in thread",
     });
 
-    const call = mocks.runMessageAction.mock.calls[0]?.[0];
+    const call = firstRunMessageActionInput();
     expect(call?.toolContext?.currentThreadTs).toBe("111.222");
     expect(call?.toolContext?.replyToMode).toBe("all");
   });
@@ -616,7 +645,7 @@ describe("message tool explicit target guard", () => {
       filePath: "/tmp/report.png",
     });
 
-    const call = mocks.runMessageAction.mock.calls[0]?.[0];
+    const call = firstRunMessageActionInput();
     expect(call?.params?.target).toBe("channel:C999");
   });
 });
@@ -1005,11 +1034,13 @@ describe("message tool schema scoping", () => {
     });
 
     const context = seenContexts.find((item) => item.phase === "describeMessageTool");
-    expect(context).toBeDefined();
-    expect(context?.currentChannelProvider).toBe("discord");
-    expect(context?.currentChannelId).toBe("channel:123");
-    expect(context?.currentThreadTs).toBe("thread-456");
-    expect(context?.currentMessageId).toBe("msg-789");
+    if (!context) {
+      throw new Error("Expected describeMessageTool discovery context");
+    }
+    expect(context.currentChannelProvider).toBe("discord");
+    expect(context.currentChannelId).toBe("channel:123");
+    expect(context.currentThreadTs).toBe("thread-456");
+    expect(context.currentMessageId).toBe("msg-789");
     expect(context?.accountId).toBe("ops");
     expect(context?.sessionKey).toBe("agent:alpha:main");
     expect(context?.sessionId).toBe("session-123");

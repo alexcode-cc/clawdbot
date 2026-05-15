@@ -479,6 +479,7 @@ function createChatContext(): Pick<
   | "chatRunBuffers"
   | "chatDeltaSentAt"
   | "chatDeltaLastBroadcastLen"
+  | "chatDeltaLastBroadcastText"
   | "chatAbortedRuns"
   | "addChatRun"
   | "removeChatRun"
@@ -495,6 +496,7 @@ function createChatContext(): Pick<
     chatRunBuffers: new Map(),
     chatDeltaSentAt: new Map(),
     chatDeltaLastBroadcastLen: new Map(),
+    chatDeltaLastBroadcastText: new Map(),
     chatAbortedRuns: new Map(),
     addChatRun: vi.fn(),
     removeChatRun: vi.fn(),
@@ -1011,7 +1013,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(payload?.ok).toBe(true);
     const broadcastPayload = lastBroadcastPayload(context);
     expect(broadcastPayload?.state).toBe("final");
-    expect(getMessage(broadcastPayload)).toBeDefined();
+    if (!getMessage(broadcastPayload)) {
+      throw new Error("Expected broadcast message");
+    }
     expect(extractFirstTextBlock(broadcastPayload)).toBe("");
   });
 
@@ -1029,7 +1033,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     expect(payload?.runId).toBe("idem-directive-only");
     expect(payload?.state).toBe("final");
-    expect(getMessage(payload)).toBeDefined();
+    if (!getMessage(payload)) {
+      throw new Error("Expected directive-only final message");
+    }
     expect(extractFirstTextBlock(payload)).toBe("");
   });
 
@@ -1165,7 +1171,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
     expect(payload?.runId).toBe("idem-telegram-final");
     expect(payload?.sessionKey).toBe(sessionKey);
     expect(payload?.state).toBe("final");
-    expect(getMessage(payload)).toBeDefined();
+    if (!getMessage(payload)) {
+      throw new Error("Expected Telegram final message");
+    }
     expect(extractFirstTextBlock(payload)).toBe("telegram ok");
     const nodeSend = lastNodeSendCall(context);
     expect(nodeSend?.[0]).toBe(sessionKey);
@@ -2416,7 +2424,9 @@ describe("chat directive tag stripping for non-streaming final payloads", () => 
 
     await waitForAssertion(() => {
       expect((context.broadcast as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
-      expect(findUserUpdate()?.message).toBeDefined();
+      if (findUserUpdate()?.message === undefined) {
+        throw new Error("Expected streamed user transcript update message");
+      }
     });
   });
 

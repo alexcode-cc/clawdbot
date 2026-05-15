@@ -79,15 +79,15 @@ describe("collectInstalledPackageErrors", () => {
 
     try {
       writeFileSync(join(packageRoot, "package.json"), '{"version":"2026.3.23"}\n', "utf8");
-      mkdirSync(join(packageRoot, "dist", "extensions", "slack"), { recursive: true });
+      mkdirSync(join(packageRoot, "dist", "extensions", "telegram"), { recursive: true });
       writeFileSync(
-        join(packageRoot, "dist", "extensions", "slack", "package.json"),
+        join(packageRoot, "dist", "extensions", "telegram", "package.json"),
         "{}\n",
         "utf8",
       );
 
       expect(collectInstalledBundledRuntimeSidecarPaths(packageRoot)).toContain(
-        "dist/extensions/slack/runtime-api.js",
+        "dist/extensions/telegram/runtime-api.js",
       );
       expect(
         collectInstalledPackageErrors({
@@ -96,7 +96,7 @@ describe("collectInstalledPackageErrors", () => {
           packageRoot,
         }),
       ).toContain(
-        "installed package is missing required bundled runtime sidecar: dist/extensions/slack/runtime-api.js",
+        "installed package is missing required bundled runtime sidecar: dist/extensions/telegram/runtime-api.js",
       );
     } finally {
       rmSync(packageRoot, { recursive: true, force: true });
@@ -250,6 +250,16 @@ describe("collectInstalledRootDependencyManifestErrors", () => {
         'import * as lark from "@larksuiteoapi/node-sdk";\nexport { lark };\n',
         "utf8",
       );
+      writeFileSync(
+        join(packageRoot, "dist", "externalized-slack-runtime.js"),
+        [
+          'import { App } from "@slack/bolt";',
+          'import { WebClient } from "@slack/web-api";',
+          "export { App, WebClient };",
+          "",
+        ].join("\n"),
+        "utf8",
+      );
       mkdirSync(join(packageRoot, "dist", "plugin-sdk"), { recursive: true });
       writeFileSync(
         join(packageRoot, "dist", "plugin-sdk/channel-test-helpers.js"),
@@ -350,9 +360,10 @@ describe("collectInstalledRootDependencyManifestErrors", () => {
       mkdirSync(join(packageRoot, "dist"), { recursive: true });
       writeFileSync(join(packageRoot, "package.json"), "{not-json\n", "utf8");
 
-      expect(collectInstalledRootDependencyManifestErrors(packageRoot)).toEqual([
-        expect.stringMatching(/^installed package\.json could not be parsed:/u),
-      ]);
+      const errors = collectInstalledRootDependencyManifestErrors(packageRoot);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]?.startsWith("installed package.json could not be parsed:")).toBe(true);
+      expect(errors[0]?.endsWith(".")).toBe(true);
     } finally {
       rmSync(packageRoot, { recursive: true, force: true });
     }

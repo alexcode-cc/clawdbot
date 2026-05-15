@@ -15,6 +15,7 @@ import {
 } from "./subagent-announce-delivery.js";
 import {
   callGateway as runtimeCallGateway,
+  dispatchGatewayMethodInProcess as runtimeDispatchGatewayMethodInProcess,
   sendMessage as runtimeSendMessage,
 } from "./subagent-announce-delivery.runtime.js";
 import { resolveAnnounceOrigin } from "./subagent-announce-origin.js";
@@ -35,6 +36,10 @@ const slackThreadOrigin = {
 
 function createGatewayMock(response: Record<string, unknown> = {}) {
   return vi.fn(async () => response) as unknown as typeof runtimeCallGateway;
+}
+
+function createInProcessGatewayMock(response: Record<string, unknown> = {}) {
+  return vi.fn(async () => response) as unknown as typeof runtimeDispatchGatewayMethodInProcess;
 }
 
 function createSendMessageMock() {
@@ -81,7 +86,9 @@ const longChildCompletionOutput = [
 ].join("\n");
 
 function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
-  expect(record).toBeDefined();
+  if (!record || typeof record !== "object") {
+    throw new Error("Expected record");
+  }
   const actual = record as Record<string, unknown>;
   for (const [key, value] of Object.entries(expected)) {
     expect(actual[key]).toEqual(value);
@@ -107,6 +114,16 @@ function expectGatewayAgentParams(
 ) {
   const request = expectRecordFields(mockCallArg(callGateway), { method: "agent" });
   return expectRecordFields(request.params, expected);
+}
+
+function expectInProcessAgentParams(
+  dispatchGatewayMethodInProcess: typeof runtimeDispatchGatewayMethodInProcess,
+  expected: Record<string, unknown>,
+) {
+  const method = mockCallArg(dispatchGatewayMethodInProcess, 0, 0);
+  expect(method).toBe("agent");
+  const params = mockCallArg(dispatchGatewayMethodInProcess, 0, 1);
+  return expectRecordFields(params, expected);
 }
 
 async function deliverSlackThreadAnnouncement(params: {
@@ -582,6 +599,57 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
     });
   });
 
+  it("uses in-process agent dispatch for dormant completion requesters", async () => {
+    const callGateway = createGatewayMock();
+    const dispatchGatewayMethodInProcess = createInProcessGatewayMock({
+      result: {
+        payloads: [{ text: "requester voice completion" }],
+      },
+    });
+    __testing.setDepsForTest({
+      callGateway,
+      dispatchGatewayMethodInProcess,
+      getRequesterSessionActivity: () => ({
+        sessionId: "requester-session-local",
+        isActive: false,
+      }),
+      getRuntimeConfig: () => ({}) as never,
+    });
+
+    const result = await deliverSubagentAnnouncement({
+      requesterSessionKey: "agent:main:slack:channel:C123:thread:171.222",
+      targetRequesterSessionKey: "agent:main:slack:channel:C123:thread:171.222",
+      triggerMessage: "child done",
+      steerMessage: "child done",
+      requesterOrigin: slackThreadOrigin,
+      requesterSessionOrigin: slackThreadOrigin,
+      completionDirectOrigin: slackThreadOrigin,
+      directOrigin: slackThreadOrigin,
+      requesterIsSubagent: false,
+      expectsCompletionMessage: true,
+      bestEffortDeliver: true,
+      directIdempotencyKey: "announce-local-dispatch",
+    });
+
+    expectRecordFields(result, {
+      delivered: true,
+      path: "direct",
+    });
+    expect(callGateway).not.toHaveBeenCalled();
+    expectInProcessAgentParams(dispatchGatewayMethodInProcess, {
+      deliver: true,
+      channel: "slack",
+      accountId: "acct-1",
+      to: "channel:C123",
+      threadId: "171.222",
+      bestEffortDeliver: true,
+    });
+    expect(mockCallArg(dispatchGatewayMethodInProcess, 0, 2)).toMatchObject({
+      expectFinal: true,
+      timeoutMs: 120_000,
+    });
+  });
+
   it("keeps announce-agent delivery primary for dormant completion events with child output", async () => {
     const callGateway = createGatewayMock({
       result: {
@@ -938,7 +1006,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       path: "direct",
       error: "UNAVAILABLE: gateway lost final output",
     });
-    expect(callGateway).toHaveBeenCalled();
+    expect(callGateway).toHaveBeenCalledTimes(4);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -1065,7 +1133,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       path: "direct",
       error: "completion agent did not produce a visible reply",
     });
-    expect(callGateway).toHaveBeenCalled();
+    expect(callGateway).toHaveBeenCalledTimes(1);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -1144,7 +1212,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       delivered: true,
       path: "direct",
     });
-    expect(callGateway).toHaveBeenCalled();
+    expect(callGateway).toHaveBeenCalledTimes(1);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -1402,7 +1470,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       delivered: true,
       path: "direct",
     });
-    expect(callGateway).toHaveBeenCalled();
+    expect(callGateway).toHaveBeenCalledTimes(1);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
@@ -1441,7 +1509,7 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       path: "direct",
       error: "completion agent did not produce a visible reply",
     });
-    expect(callGateway).toHaveBeenCalled();
+    expect(callGateway).toHaveBeenCalledTimes(1);
     expect(sendMessage).not.toHaveBeenCalled();
   });
 

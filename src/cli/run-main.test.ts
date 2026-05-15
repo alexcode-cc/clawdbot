@@ -114,6 +114,8 @@ describe("shouldEnsureCliPath", () => {
   it("skips path bootstrap for read-only fast paths", () => {
     expect(shouldEnsureCliPath(["node", "openclaw"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "openclaw", "--profile", "work"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "openclaw", "plugins"])).toBe(false);
+    expect(shouldEnsureCliPath(["node", "openclaw", "mcp"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "openclaw", "status"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "openclaw", "--log-level", "debug", "status"])).toBe(false);
     expect(shouldEnsureCliPath(["node", "openclaw", "sessions", "--json"])).toBe(false);
@@ -169,6 +171,13 @@ describe("shouldStartProxyForCli", () => {
   it("starts managed proxy routing for the --update shorthand", () => {
     expect(shouldStartProxyForCli(["node", "openclaw", "--update"])).toBe(true);
     expect(shouldStartProxyForCli(["node", "openclaw", "--profile", "p", "--update"])).toBe(true);
+  });
+
+  it("skips managed proxy routing for bare parent default help", () => {
+    expect(shouldStartProxyForCli(["node", "openclaw", "plugins"])).toBe(false);
+    expect(shouldStartProxyForCli(["node", "openclaw", "channels"])).toBe(false);
+    expect(shouldStartProxyForCli(["node", "openclaw", "devices"])).toBe(false);
+    expect(shouldStartProxyForCli(["node", "openclaw", "mcp"])).toBe(false);
   });
 });
 
@@ -400,7 +409,9 @@ describe("resolveMissingPluginCommandMessage", () => {
       },
       { registry: losslessClawToolRegistry },
     );
-    expect(message).not.toBeNull();
+    if (message === null) {
+      throw new Error("expected missing plugin command message");
+    }
     expect(message).toContain('"lcm_recent"');
     expect(message).toContain('"lossless-claw"');
     expect(message).toContain("agent tool");
@@ -411,7 +422,9 @@ describe("resolveMissingPluginCommandMessage", () => {
     const message = resolveMissingPluginCommandMessage("LCM_Recent", undefined, {
       registry: losslessClawToolRegistry,
     });
-    expect(message).not.toBeNull();
+    if (message === null) {
+      throw new Error("expected missing plugin command message");
+    }
     expect(message).toContain("agent tool");
     expect(message).toContain('"lossless-claw"');
   });
@@ -495,7 +508,9 @@ describe("resolveMissingPluginCommandMessage", () => {
     const message = resolveMissingPluginCommandMessage("feishu_chat", undefined, {
       resolveToolOwner: () => manifestOnlyOwner,
     });
-    expect(message).not.toBeNull();
+    if (message === null) {
+      throw new Error("expected missing plugin command message");
+    }
     expect(message).toContain("may be provided by");
     expect(message).toContain('"feishu"');
     expect(message).not.toContain("registered by");

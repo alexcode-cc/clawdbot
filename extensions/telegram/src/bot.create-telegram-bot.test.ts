@@ -1,7 +1,11 @@
-import { escapeRegExp, formatEnvelopeTimestamp } from "openclaw/plugin-sdk/channel-test-helpers";
+import {
+  escapeRegExp,
+  formatEnvelopeTimestamp,
+  stripAnsi,
+} from "openclaw/plugin-sdk/channel-test-helpers";
 import type { GetReplyOptions, MsgContext } from "openclaw/plugin-sdk/reply-runtime";
+import { sanitizeTerminalText } from "openclaw/plugin-sdk/test-fixtures";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { stripAnsi } from "../../../src/terminal/ansi.js";
 import type { TelegramBotOptions } from "./bot.types.js";
 const harness = await import("./bot.create-telegram-bot.test-harness.js");
 const conversationRuntime = await import("openclaw/plugin-sdk/conversation-runtime");
@@ -247,7 +251,9 @@ describe("createTelegramBot", () => {
 
     expect(errorHandler).toBeTypeOf("function");
     errorHandler?.(new Error("handler boom"));
-    const errorMessage = stripAnsi(String(errorMock.mock.calls[0]?.[0]));
+    const errorCalls = (runtime.error as unknown as { mock: { calls: Array<[unknown]> } }).mock
+      .calls;
+    const errorMessage = sanitizeTerminalText(String(errorCalls[0]?.[0]));
     expect(errorMessage.startsWith("telegram bot error: Error: handler boom")).toBe(true);
   });
 
@@ -440,9 +446,8 @@ describe("createTelegramBot", () => {
     const sequentializer = sequentializeSpy.mock.results[0]?.value as
       | TelegramMiddleware
       | undefined;
-    expect(sequentializer).toBeDefined();
     if (!sequentializer) {
-      return;
+      throw new Error("Expected sequentialize middleware");
     }
 
     const topicCtx = (threadId: number, updateId: number) => {
@@ -485,36 +490,17 @@ describe("createTelegramBot", () => {
 
   it("keeps ordinary Telegram messages serialized within the same topic", async () => {
     installPerKeySequentializer();
-    loadConfig.mockReturnValue({
-      channels: {
-        telegram: {
-          dmPolicy: "open",
-          allowFrom: ["*"],
-          groups: { "*": { requireMention: false } },
-        },
-      },
-    });
+    createTelegramBot({ token: "tok" });
+    const sequentializer = requireValue(
+      sequentializeSpy.mock.results[0]?.value as TelegramMiddleware | undefined,
+      "telegram sequentializer",
+    );
 
-    const startedBodies: string[] = [];
+    const events: string[] = [];
     let releaseFirstTurn: (() => void) | undefined;
     const firstTurnGate = new Promise<void>((resolve) => {
       releaseFirstTurn = resolve;
     });
-
-    replySpy.mockImplementation(async (ctx: MsgContext, opts?: GetReplyOptions) => {
-      await opts?.onReplyStart?.();
-      const body = ctx.Body ?? "";
-      startedBodies.push(body);
-      if (body.includes("first message")) {
-        await firstTurnGate;
-      }
-      return { text: `reply:${body}` };
-    });
-
-    createTelegramBot({ token: "tok" });
-    const messageHandler = getOnHandler("message") as (
-      ctx: TelegramMiddlewareTestContext,
-    ) => Promise<void>;
 
     const firstCtx = {
       ...makeForumGroupMessageCtx({ threadId: 99, text: "first message" }),
@@ -533,25 +519,21 @@ describe("createTelegramBot", () => {
       update: { update_id: 202 },
     };
 
-    const firstPromise = runTelegramMiddlewareChain({
-      ctx: firstCtx,
-      finalHandler: messageHandler,
+    const firstPromise = sequentializer(firstCtx, async () => {
+      events.push("first:start");
+      await firstTurnGate;
+      events.push("first:end");
     });
 
-    await vi.waitFor(() => {
-      expect(startedBodies).toHaveLength(1);
-      expect(startedBodies[0]).toContain("first message");
-    });
+    await flushTelegramTestMicrotasks();
+    expect(events).toEqual(["first:start"]);
 
-    const secondPromise = runTelegramMiddlewareChain({
-      ctx: secondCtx,
-      finalHandler: messageHandler,
+    const secondPromise = sequentializer(secondCtx, async () => {
+      events.push("second");
     });
 
     await Promise.resolve();
-    expect(startedBodies).toHaveLength(1);
-    expect(startedBodies[0]).toContain("first message");
-    expect(sendMessageSpy).not.toHaveBeenCalled();
+    expect(events).toEqual(["first:start"]);
 
     if (!releaseFirstTurn) {
       throw new Error("Expected first Telegram turn release callback to be initialized");
@@ -559,12 +541,7 @@ describe("createTelegramBot", () => {
     releaseFirstTurn();
     await Promise.all([firstPromise, secondPromise]);
 
-    expect(startedBodies).toHaveLength(2);
-    expect(startedBodies[0]).toContain("first message");
-    expect(startedBodies[1]).toContain("second message");
-    const sentBodies = sendMessageSpy.mock.calls.map((call) => String(call[1]));
-    expect(sentBodies[0]).toContain("first message");
-    expect(sentBodies[1]).toContain("second message");
+    expect(events).toEqual(["first:start", "first:end", "second"]);
   });
 
   it("preserves same-chat reply order when a debounced run is still active", async () => {

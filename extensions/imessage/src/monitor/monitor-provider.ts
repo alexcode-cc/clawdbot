@@ -61,10 +61,13 @@ import {
 } from "./group-allowlist-warnings.js";
 import {
   buildIMessageInboundContext,
+  resolveIMessageReactionContext,
   resolveIMessageInboundDecision,
 } from "./inbound-processing.js";
 import { createLoopRateLimiter } from "./loop-rate-limiter.js";
+import { stageIMessageAttachments } from "./media-staging.js";
 import { parseIMessageNotification } from "./parse-notification.js";
+import { enqueueIMessageReactionSystemEvent } from "./reaction-system-event.js";
 import { normalizeAllowList, resolveRuntime } from "./runtime.js";
 import { createSelfChatCache } from "./self-chat-cache.js";
 import type { IMessagePayload, MonitorIMessageOpts } from "./types.js";
@@ -127,16 +130,6 @@ function isRetriableWatchSubscribeStartupError(error: unknown): boolean {
   return /imsg rpc timeout \(watch\.subscribe\)|imsg rpc (closed|exited|not running)/i.test(
     String(error),
   );
-}
-
-function formatIMessageReactionText(message: IMessagePayload): string | undefined {
-  if (!message.is_reaction) {
-    return undefined;
-  }
-  const action = message.is_reaction_add === false ? "removed" : "added";
-  const emoji = message.reaction_emoji?.trim() || message.reaction_type?.trim() || "reaction";
-  const target = message.reacted_to_guid?.trim();
-  return target ? `${action} ${emoji} reaction to [id:${target}]` : `${action} ${emoji} reaction`;
 }
 
 async function waitForWatchSubscribeRetryDelay(params: {
@@ -282,6 +275,9 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
     },
     shouldDebounce: (entry) => {
       const msg = entry.message;
+      if (resolveIMessageReactionContext(msg, (msg.text ?? "").trim())) {
+        return false;
+      }
       // From-me messages are cached, not processed — never debounce.
       if (msg.is_from_me === true) {
         return false;
@@ -336,8 +332,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
   };
 
   async function handleMessageNow(message: IMessagePayload) {
-    const reactionText = formatIMessageReactionText(message);
-    const messageText = (reactionText ?? message.text ?? "").trim();
+    const messageText = (message.text ?? "").trim();
 
     const attachments = includeAttachments ? (message.attachments ?? []) : [];
     const effectiveAttachmentRoots = remoteHost ? remoteAttachmentRoots : attachmentRoots;
@@ -352,13 +347,14 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       logVerbose(`imessage: dropping inbound attachment outside allowed roots: ${attachmentPath}`);
       return false;
     });
-    const firstAttachment = validAttachments[0];
-    const mediaPath = firstAttachment?.original_path ?? undefined;
-    const mediaType = firstAttachment?.mime_type ?? undefined;
-    // Build arrays for all attachments (for multi-image support)
-    const mediaPaths = validAttachments.map((a) => a.original_path).filter(Boolean) as string[];
-    const mediaTypes = validAttachments.map((a) => a.mime_type ?? undefined);
-    const kind = kindFromMime(mediaType ?? undefined);
+    const rawMediaAttachments = validAttachments.flatMap((a) => {
+      const attachmentPath = a.original_path?.trim();
+      return attachmentPath
+        ? [{ path: attachmentPath, contentType: a.mime_type ?? undefined }]
+        : [];
+    });
+    const placeholderMediaType = rawMediaAttachments[0]?.contentType;
+    const kind = kindFromMime(placeholderMediaType ?? undefined);
     const placeholder = kind
       ? `<media:${kind}>`
       : validAttachments.length
@@ -387,6 +383,7 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       groupHistories,
       echoCache: sentMessageCache,
       selfChatCache,
+      reactionNotifications: imessageCfg.reactionNotifications,
       logVerbose,
     });
 
@@ -472,9 +469,28 @@ export async function monitorIMessageProvider(opts: MonitorIMessageOpts = {}): P
       return;
     }
 
+    if (decision.kind === "reaction") {
+      enqueueIMessageReactionSystemEvent({ decision, runtime, logVerbose });
+      return;
+    }
+
     const storePath = resolveStorePath(cfg.session?.store, {
       agentId: decision.route.agentId,
     });
+    const stagedAttachments = remoteHost
+      ? []
+      : await stageIMessageAttachments(validAttachments, {
+          maxBytes: mediaMaxBytes,
+          allowedRoots: effectiveAttachmentRoots,
+          deps: { logVerbose },
+        });
+    const mediaAttachments = remoteHost ? rawMediaAttachments : stagedAttachments;
+    const firstAttachment = mediaAttachments[0];
+    const mediaPath = firstAttachment?.path ?? undefined;
+    const mediaType = firstAttachment?.contentType ?? undefined;
+    // Build arrays for all attachments (for multi-image support)
+    const mediaPaths = mediaAttachments.map((a) => a.path).filter(Boolean);
+    const mediaTypes = mediaAttachments.map((a) => a.contentType ?? undefined);
     const previousTimestamp = readSessionUpdatedAt({
       storePath,
       sessionKey: decision.route.sessionKey,

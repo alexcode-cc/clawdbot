@@ -1273,6 +1273,67 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     }
   });
 
+  it("forwards inbound max_completion_tokens and max_tokens into streamParams", async () => {
+    const port = enabledPort;
+    const mockAgentOnce = (payloads: Array<{ text: string }>) => {
+      agentCommand.mockClear();
+      agentCommand.mockResolvedValueOnce({ payloads } as never);
+    };
+    const getFirstAgentMaxTokens = () => {
+      const opts = (agentCommand.mock.calls[0] as unknown[] | undefined)?.[0];
+      return (opts as { streamParams?: { maxTokens?: number } } | undefined)?.streamParams
+        ?.maxTokens;
+    };
+
+    {
+      mockAgentOnce([{ text: "hello" }]);
+      const res = await postChatCompletions(port, {
+        model: "openclaw",
+        max_completion_tokens: 256,
+        messages: [{ role: "user", content: "hi" }],
+      });
+      expect(res.status).toBe(200);
+      expect(getFirstAgentMaxTokens()).toBe(256);
+      await res.text();
+    }
+
+    {
+      mockAgentOnce([{ text: "hello" }]);
+      const res = await postChatCompletions(port, {
+        model: "openclaw",
+        max_tokens: 128,
+        messages: [{ role: "user", content: "hi" }],
+      });
+      expect(res.status).toBe(200);
+      expect(getFirstAgentMaxTokens()).toBe(128);
+      await res.text();
+    }
+
+    {
+      mockAgentOnce([{ text: "hello" }]);
+      const res = await postChatCompletions(port, {
+        model: "openclaw",
+        max_completion_tokens: 64,
+        max_tokens: 999,
+        messages: [{ role: "user", content: "hi" }],
+      });
+      expect(res.status).toBe(200);
+      expect(getFirstAgentMaxTokens()).toBe(64);
+      await res.text();
+    }
+
+    {
+      mockAgentOnce([{ text: "hello" }]);
+      const res = await postChatCompletions(port, {
+        model: "openclaw",
+        messages: [{ role: "user", content: "hi" }],
+      });
+      expect(res.status).toBe(200);
+      expect(getFirstAgentMaxTokens()).toBeUndefined();
+      await res.text();
+    }
+  });
+
   it("returns 429 for repeated failed auth when gateway.auth.rateLimit is configured", async () => {
     testState.gatewayAuth = {
       mode: "token",
@@ -1446,7 +1507,9 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
               | string
               | undefined) === "get_weather",
         );
-        expect(withIdentity).toBeTruthy();
+        if (!withIdentity) {
+          throw new Error("expected tool call delta with identity");
+        }
         const argsJoined = toolCallDeltaRecords
           .filter((record) => record.index === 0)
           .map(
@@ -1460,7 +1523,9 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const finishChunk = toolCallChunks
           .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "tool_calls");
-        expect(finishChunk).toBeTruthy();
+        if (!finishChunk) {
+          throw new Error("expected tool_calls finish chunk");
+        }
       }
 
       {
@@ -1499,9 +1564,11 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           .filter((d) => d !== "[DONE]")
           .map((d) => JSON.parse(d) as Record<string, unknown>);
         const usageChunk = jsonChunks.find((chunk) => "usage" in chunk);
-        expect(usageChunk).toBeTruthy();
-        expect(usageChunk?.choices).toEqual([]);
-        expect(usageChunk?.usage).toEqual({
+        if (!usageChunk) {
+          throw new Error("expected streamed usage chunk");
+        }
+        expect(usageChunk.choices).toEqual([]);
+        expect(usageChunk.usage).toEqual({
           prompt_tokens: 12,
           completion_tokens: 3,
           total_tokens: 15,
@@ -1566,7 +1633,9 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const finishChunk = lateToolCallChunks
           .flatMap((chunk) => (chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "tool_calls");
-        expect(finishChunk).toBeTruthy();
+        if (!finishChunk) {
+          throw new Error("expected late tool_calls finish chunk");
+        }
         const anyToolCalls = lateToolCallChunks.some((chunk) => {
           const choice = ((chunk.choices as Array<Record<string, unknown>> | undefined) ?? [])[0];
           const delta = (choice?.delta as Record<string, unknown> | undefined) ?? {};
@@ -1608,7 +1677,9 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
             ((chunk.error as { type?: unknown }).type ?? "") === "invalid_request_error" &&
             ((chunk.error as { message?: unknown }).message ?? "") === "invalid tool configuration",
         );
-        expect(protocolError).toBeTruthy();
+        if (!protocolError) {
+          throw new Error("expected invalid tool configuration protocol error");
+        }
         const stopChoice = toolConflictChunks
           .flatMap((c) => (c.choices as Array<Record<string, unknown>> | undefined) ?? [])
           .find((choice) => choice.finish_reason === "stop");

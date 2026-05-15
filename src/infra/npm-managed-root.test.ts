@@ -9,6 +9,7 @@ import {
   readManagedNpmRootInstalledDependency,
   readOpenClawManagedNpmRootOverrides,
   resolveManagedNpmRootDependencySpec,
+  syncManagedNpmRootPeerDependencies,
   upsertManagedNpmRootDependency,
 } from "./npm-managed-root.js";
 
@@ -51,6 +52,14 @@ async function expectPathMissing(targetPath: string): Promise<void> {
     return;
   }
   throw new Error(`Expected path to be missing: ${targetPath}`);
+}
+
+function requireFirstMockCall<T>(mock: { mock: { calls: T[][] } }, label: string): T[] {
+  const call = mock.mock.calls.at(0);
+  if (!call) {
+    throw new Error(`expected ${label} call`);
+  }
+  return call;
 }
 
 describe("managed npm root", () => {
@@ -124,6 +133,10 @@ describe("managed npm root", () => {
       managedOverrides: {
         axios: "1.16.0",
         "node-domexception": "npm:@nolyfill/domexception@1.0.28",
+        nested: {
+          semver: "1.2.3",
+          alias: "npm:@scope/alias@1.0.0",
+        },
       },
     });
 
@@ -139,16 +152,212 @@ describe("managed npm root", () => {
         "left-pad": "1.3.0",
         axios: "1.16.0",
         "node-domexception": "npm:@nolyfill/domexception@1.0.28",
+        nested: {
+          alias: "npm:@scope/alias@1.0.0",
+          semver: "1.2.3",
+        },
       },
       openclaw: {
-        managedOverrides: ["axios", "node-domexception"],
+        managedOverrides: ["axios", "nested", "node-domexception"],
+      },
+    });
+  });
+
+  it("can omit npm alias overrides for npm versions that reject them", async () => {
+    const npmRoot = await makeTempRoot();
+
+    await upsertManagedNpmRootDependency({
+      npmRoot,
+      packageName: "@openclaw/feishu",
+      dependencySpec: "2026.5.4",
+      omitUnsupportedManagedOverrides: true,
+      managedOverrides: {
+        axios: "1.16.0",
+        "node-domexception": "npm:@nolyfill/domexception@1.0.28",
+        nested: {
+          alias: "npm:@scope/alias@1.0.0",
+          semver: "1.2.3",
+        },
+      },
+    });
+
+    await expect(
+      fs.readFile(path.join(npmRoot, "package.json"), "utf8").then((raw) => JSON.parse(raw)),
+    ).resolves.toMatchObject({
+      overrides: {
+        axios: "1.16.0",
+        nested: {
+          semver: "1.2.3",
+        },
+      },
+      openclaw: {
+        managedOverrides: ["axios", "nested"],
+      },
+    });
+  });
+
+  it("updates stale managed peer dependency pins from current plugin peers", async () => {
+    const npmRoot = await makeTempRoot();
+    await fs.writeFile(
+      path.join(npmRoot, "package.json"),
+      `${JSON.stringify(
+        {
+          private: true,
+          dependencies: {
+            "fixture-runtime": "1.0.0",
+          },
+          openclaw: {
+            managedPeerDependencies: ["fixture-runtime"],
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await fs.mkdir(path.join(npmRoot, "node_modules", "fixture-plugin"), { recursive: true });
+    await fs.mkdir(path.join(npmRoot, "node_modules", "fixture-runtime"), { recursive: true });
+    await fs.writeFile(
+      path.join(npmRoot, "node_modules", "fixture-plugin", "package.json"),
+      `${JSON.stringify({
+        name: "fixture-plugin",
+        version: "1.0.0",
+        peerDependencies: {
+          "fixture-runtime": "^2.0.0",
+        },
+        peerDependenciesMeta: {},
+      })}\n`,
+    );
+    await fs.writeFile(
+      path.join(npmRoot, "node_modules", "fixture-runtime", "package.json"),
+      `${JSON.stringify({
+        name: "fixture-runtime",
+        version: "1.0.0",
+      })}\n`,
+    );
+
+    await expect(
+      syncManagedNpmRootPeerDependencies({
+        npmRoot,
+        preferredPackageName: "fixture-plugin",
+      }),
+    ).resolves.toBe(true);
+
+    await expect(
+      fs.readFile(path.join(npmRoot, "package.json"), "utf8").then((raw) => JSON.parse(raw)),
+    ).resolves.toEqual({
+      private: true,
+      dependencies: {
+        "fixture-runtime": "^2.0.0",
+      },
+      openclaw: {
+        managedPeerDependencies: ["fixture-runtime"],
+      },
+    });
+  });
+
+  it("keeps existing managed peer dependency pins during unrelated plugin installs", async () => {
+    const npmRoot = await makeTempRoot();
+    await fs.writeFile(
+      path.join(npmRoot, "package.json"),
+      `${JSON.stringify(
+        {
+          private: true,
+          dependencies: {
+            "fixture-runtime": "^2.0.0",
+          },
+          openclaw: {
+            managedPeerDependencies: ["fixture-runtime"],
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await fs.mkdir(path.join(npmRoot, "node_modules", "fixture-alpha"), { recursive: true });
+    await fs.mkdir(path.join(npmRoot, "node_modules", "fixture-beta"), { recursive: true });
+    await fs.writeFile(
+      path.join(npmRoot, "node_modules", "fixture-alpha", "package.json"),
+      `${JSON.stringify({
+        name: "fixture-alpha",
+        version: "1.0.0",
+        peerDependencies: {
+          "fixture-runtime": "^1.0.0",
+        },
+      })}\n`,
+    );
+    await fs.writeFile(
+      path.join(npmRoot, "node_modules", "fixture-beta", "package.json"),
+      `${JSON.stringify({
+        name: "fixture-beta",
+        version: "1.0.0",
+        peerDependencies: {
+          "fixture-runtime": "^2.0.0",
+        },
+      })}\n`,
+    );
+
+    await expect(
+      syncManagedNpmRootPeerDependencies({
+        npmRoot,
+        preferredPackageName: "fixture-unrelated",
+      }),
+    ).resolves.toBe(false);
+
+    await expect(
+      fs.readFile(path.join(npmRoot, "package.json"), "utf8").then((raw) => JSON.parse(raw)),
+    ).resolves.toEqual({
+      private: true,
+      dependencies: {
+        "fixture-runtime": "^2.0.0",
+      },
+      openclaw: {
+        managedPeerDependencies: ["fixture-runtime"],
+      },
+    });
+  });
+
+  it("preserves user-owned peer dependency pins while scanning plugin peers", async () => {
+    const npmRoot = await makeTempRoot();
+    await fs.writeFile(
+      path.join(npmRoot, "package.json"),
+      `${JSON.stringify(
+        {
+          private: true,
+          dependencies: {
+            "fixture-runtime": "1.0.0",
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await fs.mkdir(path.join(npmRoot, "node_modules", "fixture-plugin"), { recursive: true });
+    await fs.writeFile(
+      path.join(npmRoot, "node_modules", "fixture-plugin", "package.json"),
+      `${JSON.stringify({
+        name: "fixture-plugin",
+        version: "1.0.0",
+        peerDependencies: {
+          "fixture-runtime": "^2.0.0",
+        },
+        peerDependenciesMeta: {},
+      })}\n`,
+    );
+
+    await expect(syncManagedNpmRootPeerDependencies({ npmRoot })).resolves.toBe(false);
+
+    await expect(
+      fs.readFile(path.join(npmRoot, "package.json"), "utf8").then((raw) => JSON.parse(raw)),
+    ).resolves.toEqual({
+      private: true,
+      dependencies: {
+        "fixture-runtime": "1.0.0",
       },
     });
   });
 
   it("reads package-level npm overrides for managed plugin installs", async () => {
     await expect(readOpenClawManagedNpmRootOverrides()).resolves.toEqual({
-      "@aws-sdk/client-bedrock-runtime": "3.1045.0",
       axios: "1.16.0",
       "fast-uri": "3.1.2",
       "follow-redirects": "1.16.0",
@@ -194,6 +403,7 @@ describe("managed npm root", () => {
           name: "openclaw",
           dependencies: {
             "@aws-sdk/client-bedrock-runtime": "3.1024.0",
+            "node-domexception": "npm:@nolyfill/domexception@1.0.28",
           },
           optionalDependencies: {
             "optional-runtime": "2.0.0",
@@ -202,8 +412,10 @@ describe("managed npm root", () => {
             "@aws-sdk/client-bedrock-runtime": "$@aws-sdk/client-bedrock-runtime",
             nested: {
               "optional-runtime": "$optional-runtime",
+              alias: "$node-domexception",
             },
             axios: "1.16.0",
+            "node-domexception": "$node-domexception",
           },
         },
         null,
@@ -215,8 +427,10 @@ describe("managed npm root", () => {
       "@aws-sdk/client-bedrock-runtime": "3.1024.0",
       nested: {
         "optional-runtime": "2.0.0",
+        alias: "npm:@nolyfill/domexception@1.0.28",
       },
       axios: "1.16.0",
+      "node-domexception": "npm:@nolyfill/domexception@1.0.28",
     });
   });
 
@@ -416,7 +630,7 @@ describe("managed npm root", () => {
     const runCommand = vi.fn().mockResolvedValue(successfulSpawn);
     await expect(repairManagedNpmRootOpenClawPeer({ npmRoot, runCommand })).resolves.toBe(true);
     expect(runCommand).toHaveBeenCalledTimes(1);
-    const [repairArgs, repairOptions] = runCommand.mock.calls[0];
+    const [repairArgs, repairOptions] = requireFirstMockCall(runCommand, "repair command");
     expect(repairArgs).toEqual([
       "npm",
       "uninstall",

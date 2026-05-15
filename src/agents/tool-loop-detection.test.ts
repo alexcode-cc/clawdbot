@@ -225,6 +225,22 @@ describe("tool-loop-detection", () => {
       expect(hash.startsWith("read:")).toBe(true);
       expect(hash.length).toBe("read:".length + 64);
     });
+
+    it("hashes circular params without collapsing repeated references", () => {
+      const shared = { id: "shared" };
+      const payload: Record<string, unknown> = { first: shared, second: shared };
+      payload.self = payload;
+
+      const equivalentShared = { id: "shared" };
+      const equivalentPayload: Record<string, unknown> = {
+        second: equivalentShared,
+        first: equivalentShared,
+      };
+      equivalentPayload.self = equivalentPayload;
+
+      expect(hashToolCall("tool", payload)).toBe(hashToolCall("tool", equivalentPayload));
+      expect(hashToolCall("tool", payload)).toEqual(expect.stringMatching(/^tool:[a-f0-9]{64}$/));
+    });
   });
 
   describe("recordToolCall", () => {
@@ -388,7 +404,7 @@ describe("tool-loop-detection", () => {
       }
     });
 
-    it("keeps generic loops warn-only below global breaker threshold", () => {
+    it("blocks generic no-progress loops at critical threshold", () => {
       const fixture = createReadNoProgressFixture();
       const loopResult = detectLoopAfterRepeatedCalls({
         toolName: fixture.toolName,
@@ -398,7 +414,9 @@ describe("tool-loop-detection", () => {
       });
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
-        expect(loopResult.level).toBe("warning");
+        expect(loopResult.level).toBe("critical");
+        expect(loopResult.detector).toBe("generic_repeat");
+        expect(loopResult.message).toContain("identical outcomes");
       }
     });
 
@@ -524,6 +542,10 @@ describe("tool-loop-detection", () => {
         toolParams: fixture.params,
         result: fixture.result,
         count: GLOBAL_CIRCUIT_BREAKER_THRESHOLD,
+        config: {
+          enabled: true,
+          detectors: { genericRepeat: false, knownPollNoProgress: true, pingPong: true },
+        },
       });
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
@@ -537,7 +559,7 @@ describe("tool-loop-detection", () => {
       const state = createState();
       const params = { command: "grafana-api.sh datasources" };
 
-      for (let index = 0; index < GLOBAL_CIRCUIT_BREAKER_THRESHOLD; index += 1) {
+      for (let index = 0; index < CRITICAL_THRESHOLD; index += 1) {
         recordSuccessfulCall(
           state,
           "exec",
@@ -560,7 +582,7 @@ describe("tool-loop-detection", () => {
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
         expect(loopResult.level).toBe("critical");
-        expect(loopResult.detector).toBe("global_circuit_breaker");
+        expect(loopResult.detector).toBe("generic_repeat");
       }
     });
 
@@ -568,7 +590,7 @@ describe("tool-loop-detection", () => {
       const state = createState();
       const params = { command: "tail -f /var/log/app.log", yieldMs: 1000 };
 
-      for (let index = 0; index < GLOBAL_CIRCUIT_BREAKER_THRESHOLD; index += 1) {
+      for (let index = 0; index < CRITICAL_THRESHOLD; index += 1) {
         recordSuccessfulCall(
           state,
           "exec",
@@ -597,7 +619,7 @@ describe("tool-loop-detection", () => {
       expect(loopResult.stuck).toBe(true);
       if (loopResult.stuck) {
         expect(loopResult.level).toBe("critical");
-        expect(loopResult.detector).toBe("global_circuit_breaker");
+        expect(loopResult.detector).toBe("generic_repeat");
       }
     });
 

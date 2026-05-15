@@ -58,6 +58,7 @@ describe("talk realtime gateway relay", () => {
       chatRunBuffers: new Map([["run-1", "partial answer"]]),
       chatDeltaSentAt: new Map(),
       chatDeltaLastBroadcastLen: new Map(),
+      chatDeltaLastBroadcastText: new Map(),
       chatAbortedRuns: new Map(),
       removeChatRun,
       agentRunSeq: new Map(),
@@ -87,7 +88,9 @@ describe("talk realtime gateway relay", () => {
   }
 
   function expectRecordFields(record: unknown, expected: Record<string, unknown>) {
-    expect(record).toBeDefined();
+    if (!record || typeof record !== "object") {
+      throw new Error("Expected record");
+    }
     const actual = record as Record<string, unknown>;
     for (const [key, value] of Object.entries(expected)) {
       expect(actual[key]).toEqual(value);
@@ -551,6 +554,7 @@ describe("talk realtime gateway relay", () => {
       chatRunBuffers: new Map([["run-1", "partial answer"]]),
       chatDeltaSentAt: new Map(),
       chatDeltaLastBroadcastLen: new Map(),
+      chatDeltaLastBroadcastText: new Map(),
       chatAbortedRuns: new Map(),
       removeChatRun,
       agentRunSeq: new Map(),

@@ -230,6 +230,76 @@ describe("subagent registry seam flow", () => {
     vi.useRealTimers();
   });
 
+  it("lists active and pending-delivery child sessions for maintenance preservation", () => {
+    const now = Date.now();
+    mod.addSubagentRunForTests({
+      runId: "run-active",
+      childSessionKey: "agent:main:subagent:active",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "main",
+      task: "active task",
+      cleanup: "delete",
+      expectsCompletionMessage: true,
+      createdAt: now,
+    });
+    mod.addSubagentRunForTests({
+      runId: "run-pending",
+      childSessionKey: "agent:main:subagent:pending",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "main",
+      task: "pending delivery task",
+      cleanup: "delete",
+      expectsCompletionMessage: true,
+      createdAt: now - 2,
+      endedAt: now - 1,
+      pendingFinalDelivery: true,
+      frozenResultText: "child output",
+    });
+    mod.addSubagentRunForTests({
+      runId: "run-complete",
+      childSessionKey: "agent:main:subagent:complete",
+      requesterSessionKey: "agent:main:main",
+      requesterDisplayKey: "main",
+      task: "already delivered task",
+      cleanup: "keep",
+      expectsCompletionMessage: true,
+      createdAt: now - 4,
+      endedAt: now - 3,
+      completionAnnouncedAt: now - 2,
+      cleanupCompletedAt: now - 1,
+    });
+
+    expect(mod.listSessionMaintenanceProtectedSubagentSessionKeys().toSorted()).toEqual([
+      "agent:main:subagent:active",
+      "agent:main:subagent:pending",
+    ]);
+  });
+
+  it("uses the disk-aware run snapshot for maintenance preservation", () => {
+    const now = Date.now();
+    mocks.getSubagentRunsSnapshotForRead.mockReturnValueOnce(
+      new Map([
+        [
+          "run-restored",
+          {
+            runId: "run-restored",
+            childSessionKey: "agent:main:subagent:restored",
+            requesterSessionKey: "agent:main:main",
+            requesterDisplayKey: "main",
+            task: "restored pending task",
+            cleanup: "delete",
+            expectsCompletionMessage: true,
+            createdAt: now,
+          },
+        ],
+      ]),
+    );
+
+    expect(mod.listSessionMaintenanceProtectedSubagentSessionKeys()).toEqual([
+      "agent:main:subagent:restored",
+    ]);
+  });
+
   it("schedules orphan recovery instead of terminally failing on recoverable wait transport errors", async () => {
     mocks.callGateway.mockImplementation(async (request: { method?: string }) => {
       if (request.method === "agent.wait") {
@@ -469,7 +539,7 @@ describe("subagent registry seam flow", () => {
       "function",
     );
 
-    const updateStore = mocks.updateSessionStore.mock.calls[0]?.[1] as
+    const updateStore = mocks.updateSessionStore.mock.calls.at(0)?.[1] as
       | ((store: Record<string, Record<string, unknown>>) => void)
       | undefined;
     expect(updateStore).toBeTypeOf("function");
@@ -490,7 +560,7 @@ describe("subagent registry seam flow", () => {
       "updated child session store entry",
     );
 
-    expect(mocks.persistSubagentRunsToDisk).toHaveBeenCalled();
+    expect(mocks.persistSubagentRunsToDisk).toHaveBeenCalledTimes(6);
   });
 
   it("suppresses stale timeout announces when the same child run later finishes successfully", async () => {

@@ -64,8 +64,6 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean) 
 }
 
 function requireRecord(value: unknown, label: string): Record<string, unknown> {
-  expect(typeof value).toBe("object");
-  expect(value).not.toBeNull();
   if (typeof value !== "object" || value === null) {
     throw new Error(`${label} was not an object`);
   }
@@ -94,7 +92,6 @@ function requireMatchingRecord(
     const record = item as Record<string, unknown>;
     return Object.entries(fields).every(([key, value]) => Object.is(record[key], value));
   });
-  expect(found).toBeDefined();
   if (!found) {
     throw new Error(`missing ${label}`);
   }
@@ -104,7 +101,6 @@ function requireMatchingRecord(
 function requireFirstMockCallArg(mock: unknown, label: string) {
   const calls = (mock as { mock?: { calls?: unknown[][] } }).mock?.calls;
   const call = calls?.[0];
-  expect(call).toBeDefined();
   if (!call) {
     throw new Error(`missing ${label} call`);
   }
@@ -989,6 +985,48 @@ describe("stuck session diagnostics threshold", () => {
       },
       "idle liveness stability event",
     );
+  });
+
+  it("suppresses liveness warnings during startupGraceMs while still sampling", () => {
+    const warnSpy = vi.spyOn(diagnosticLogger, "warn").mockImplementation(() => undefined);
+    const events: string[] = [];
+    const sampleLiveness = vi.fn(() => ({
+      reasons: ["event_loop_delay" as const],
+      intervalMs: 30_000,
+      eventLoopDelayP99Ms: 1_500,
+      eventLoopDelayMaxMs: 2_000,
+    }));
+    const unsubscribe = onDiagnosticEvent((event) => events.push(event.type));
+
+    try {
+      startDiagnosticHeartbeat(
+        {
+          diagnostics: {
+            enabled: true,
+          },
+        },
+        {
+          emitMemorySample: createEmitMemorySampleMock(),
+          sampleLiveness,
+          startupGraceMs: 60_000,
+        },
+      );
+
+      logMessageQueued({ sessionId: "s1", sessionKey: "main", source: "test" });
+      vi.advanceTimersByTime(30_000);
+
+      expect(sampleLiveness).toHaveBeenCalledTimes(1);
+      expectNoLoggerMessageContaining(warnSpy, "liveness warning:");
+      expect(events).not.toContain("diagnostic.liveness.warning");
+
+      vi.advanceTimersByTime(30_000);
+
+      expect(sampleLiveness).toHaveBeenCalledTimes(2);
+      expectLoggerMessageContaining(warnSpy, "liveness warning:");
+      expect(events).toContain("diagnostic.liveness.warning");
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("warns for liveness samples when diagnostic work is open", () => {

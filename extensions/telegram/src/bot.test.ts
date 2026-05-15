@@ -25,6 +25,7 @@ const {
   replySpy,
   resolveExecApprovalSpy,
   sendMessageSpy,
+  setSessionStoreEntriesForTest,
   setMyCommandsSpy,
   telegramBotDepsForTest,
   telegramBotRuntimeForTest,
@@ -89,8 +90,9 @@ type MockCallSource = {
 };
 
 function requireRecord(value: unknown, label: string): Record<string, unknown> {
-  expect(value, label).toBeTypeOf("object");
-  expect(value, label).not.toBeNull();
+  if (!value || typeof value !== "object") {
+    throw new Error(`expected ${label}`);
+  }
   return value as Record<string, unknown>;
 }
 
@@ -1175,6 +1177,7 @@ describe("createTelegramBot", () => {
       ]),
     });
 
+    const storePath = `/tmp/openclaw-telegram-model-display-names-${process.pid}-${Date.now()}.json`;
     const config = {
       agents: {
         defaults: {
@@ -1187,8 +1190,12 @@ describe("createTelegramBot", () => {
           allowFrom: ["*"],
         },
       },
+      session: {
+        store: storePath,
+      },
     } satisfies NonNullable<Parameters<typeof createTelegramBot>[0]["config"]>;
 
+    await rm(storePath, { force: true });
     loadConfig.mockReturnValue(config);
     createTelegramBot({
       token: "tok",
@@ -1219,21 +1226,21 @@ describe("createTelegramBot", () => {
     expect(replySpy).not.toHaveBeenCalled();
     expect(editMessageTextSpy).toHaveBeenCalledTimes(1);
     const [, , , params] = editMessageTextSpy.mock.calls[0] ?? [];
-    const buttons = (
+    const inlineKeyboard = (
       params as {
         reply_markup?: {
           inline_keyboard?: Array<Array<{ text?: string; callback_data?: string }>>;
         };
       }
-    ).reply_markup?.inline_keyboard?.flat();
+    ).reply_markup?.inline_keyboard;
 
-    expect(buttons).toContainEqual({
-      text: "GPT 4.1 Bridge",
-      callback_data: "mdl_sel_openai/gpt-4.1",
-    });
-    const gpt5Button = buttons?.find((button) => button.callback_data === "mdl_sel_openai/gpt-5");
-    expect(gpt5Button?.text?.replace(" ✓", "")).toBe("GPT Five Bridge");
+    expect(inlineKeyboard).toStrictEqual([
+      [{ text: "GPT 4.1 Bridge", callback_data: "mdl_sel_openai/gpt-4.1" }],
+      [{ text: "GPT Five Bridge ✓", callback_data: "mdl_sel_openai/gpt-5" }],
+      [{ text: "<< Back", callback_data: "mdl_back" }],
+    ]);
     expect(answerCallbackQuerySpy).toHaveBeenCalledWith("cbq-model-display-names-1");
+    await rm(storePath, { force: true });
   });
 
   it("resets overrides when selecting the configured default model", async () => {
@@ -1679,6 +1686,127 @@ describe("createTelegramBot", () => {
     expect(messagesById.get("200")?.body).toBe("Lunch after standup?");
     expect(messagesById.get("201")?.sender).toBe("Riley");
     expect(messagesById.get("201")?.body).toBe("After the incident review.");
+  });
+
+  it("omits stale Telegram topic context before the persisted session start", async () => {
+    onSpy.mockClear();
+    replySpy.mockClear();
+
+    const sessionStartedAt = Date.parse("2026-05-10T17:30:43.127Z");
+    const config = {
+      agents: {
+        defaults: {
+          envelopeTimezone: "utc",
+        },
+      },
+      channels: {
+        telegram: {
+          groupPolicy: "open",
+          groups: { "*": { requireMention: false } },
+        },
+      },
+    } satisfies OpenClawConfig;
+    const sessionEntry = {
+      sessionId: "redacted-session",
+      sessionStartedAt,
+      updatedAt: sessionStartedAt,
+      lastInteractionAt: sessionStartedAt,
+    };
+    loadConfig.mockReturnValue(config);
+    setSessionStoreEntriesForTest({
+      "agent:main:telegram:group:-1001234567890:topic:22534": sessionEntry,
+    });
+
+    createTelegramBot({ token: "tok", config });
+    const handler = getOnHandler("message") as (ctx: Record<string, unknown>) => Promise<void>;
+    const baseCtx = {
+      me: { id: 999, username: "openclaw_bot" },
+      getFile: async () => ({ download: async () => new Uint8Array() }),
+    };
+    const chat = {
+      id: -1001234567890,
+      type: "supergroup",
+      title: "Ops",
+      is_forum: true,
+    };
+    const from = { id: 201, is_bot: false, first_name: "Requester" };
+    const staleInstruction = "okay so we just flip in openclaw? if yes do it up";
+
+    await handler({
+      ...baseCtx,
+      message: {
+        chat,
+        text: "tools.toolSearch: true",
+        date: Date.parse("2026-05-10T12:33:48.000Z") / 1000,
+        message_id: 84649,
+        message_thread_id: 22534,
+        from,
+      },
+    });
+    await handler({
+      ...baseCtx,
+      message: {
+        chat,
+        text: staleInstruction,
+        date: Date.parse("2026-05-10T12:40:28.000Z") / 1000,
+        message_id: 84670,
+        message_thread_id: 22534,
+        from,
+      },
+    });
+    await handler({
+      ...baseCtx,
+      message: {
+        chat,
+        text: "how does this determine stability?",
+        date: Date.parse("2026-05-11T23:36:21.000Z") / 1000,
+        message_id: 87184,
+        message_thread_id: 22534,
+        from,
+      },
+    });
+
+    setSessionStoreEntriesForTest({
+      "agent:main:telegram:group:-1001234567890:topic:22534": sessionEntry,
+    });
+    replySpy.mockClear();
+    await handler({
+      ...baseCtx,
+      message: {
+        chat,
+        text: "what config change?",
+        date: Date.parse("2026-05-12T02:24:09.000Z") / 1000,
+        message_id: 87227,
+        message_thread_id: 22534,
+        from,
+        reply_to_message: {
+          chat,
+          text: staleInstruction,
+          date: Date.parse("2026-05-10T12:40:28.000Z") / 1000,
+          message_id: 84670,
+          message_thread_id: 22534,
+          from,
+        },
+      },
+    });
+
+    expect(replySpy).toHaveBeenCalledTimes(1);
+    const payload = replySpy.mock.calls[0][0];
+    const [conversationContext] = requireArray(
+      payload.UntrustedStructuredContext,
+      "structured context",
+    );
+    const contextRecord = requireRecord(conversationContext, "conversation context");
+    const contextPayload = requireRecord(contextRecord.payload, "conversation context payload");
+    const messages = requireArray(contextPayload.messages, "conversation context messages").map(
+      (message, index) => requireRecord(message, `conversation context message ${index + 1}`),
+    );
+    const messagesById = new Map(messages.map((message) => [message.message_id, message]));
+    expect(messagesById.get("87184")?.body).toBe("how does this determine stability?");
+    expect(messagesById.has("84649")).toBe(false);
+    expect(messagesById.has("84670")).toBe(false);
+    expect(messages.map((message) => message.body)).not.toContain(staleInstruction);
+    expect(messages.map((message) => message.body)).not.toContain("tools.toolSearch: true");
   });
 
   it("updates cached bot messages from Telegram edit updates", async () => {
