@@ -1382,7 +1382,14 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.9）
+## Agent 改善（2026.4.22–2026.5.10）
+
+### 2026.5.10（精選，對齊 `CHANGELOG`）
+
+- **Subagents delegation mode**：`agents.defaults.subagents.delegationMode: "prefer"` 只改提示層級，不改工具權限；主 agent 會更傾向把慢工與長工分派出去。
+- **Runtime identity in system prompt**：目前 provider / model identity 會被注入 system prompt，避免 agent 自我描述和實際 runtime selection 脫節。
+- **Current-turn context unify**：reply / attempt / prompt 路徑對當前回合的上下文看法更一致，減少重播、reply chain 與 runtime prompt 的分歧。
+- **Trust boundary**：受信任的 skill symlink targets、subagent retention 與 current-turn context 的邊界都在這輪持續收斂。
 
 ### 2026.5.9（精選，對齊 `CHANGELOG`）
 

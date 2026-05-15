@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.9-beta.1` | Node.js `>=22.16.0`
+> 版本：`2026.5.10-beta.6` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.9-beta.1 或更新版本
+# 應顯示 2026.5.10-beta.6 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,13 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.9）
+## 安裝與設定改善（2026.4.22–2026.5.10）
+
+### 2026.5.10（精選，對齊 `CHANGELOG`）
+
+- **ClickClack**：onboard / wizard 與頻道表會把 ClickClack 當成 first-class channel extension，而不是附錄式外掛。
+- **Skills trust**：`skills.load.allowSymlinkTargets` 讓受信任的 sibling-repo skills 可被安全地列入安裝 / 載入敘事。
+- **Gateway / restart**：restart continuation authority 與 retry budget 的敘述更新，讓 setup 後的 restart / recovery 文件不再停在舊 snapshot。
 
 ### 2026.5.9（精選，對齊 `CHANGELOG`)
 
@@ -1568,4 +1574,4 @@ openclaw doctor --fix
 
 ---
 
-*本文件基於 OpenClaw `2026.5.9-beta.1` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.10-beta.6` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

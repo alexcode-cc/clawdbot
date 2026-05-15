@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請先讀 **`## Gateway 改善（2026.5.9）`**（**`## 2026.5.9`**）；回溯 **2026.5.6–2026.5.7** 仍見下方 **Gateway 改善（2026.5.6–2026.5.7）**；**2026.5.5** 見 **Gateway 改善（2026.5.5）**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.9-beta.1`**（README／頁尾／對齊 `package.json`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請先讀 **`## Gateway 改善（2026.5.10）`**（**`## 2026.5.10`**）；回溯 **2026.5.6–2026.5.7** 仍見下方 **Gateway 改善（2026.5.6–2026.5.7）**；**2026.5.5** 見 **Gateway 改善（2026.5.5）**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.10-beta.6`**（README／頁尾／對齊 `package.json`）為準。
 
 ### 設定與啟動效能
 
@@ -899,6 +899,21 @@ Control UI dashboard 經過全面翻新，新增：
 ### Streaming／跨通道語意（與 Gateway 相交）
 
 - **Discord streaming**：對外回覆預設走 **progress draft**，除非 **`channels.discord.streaming.mode`** 設為 **`off`**（見 changelog）。
+
+## Gateway 改善（2026.5.10）
+
+> 對齊 **`CHANGELOG.md`** 與 **`docs-cht/commit-analyze-20260510.md`**；這一輪主要是 **restart / config reread / queue recovery** 類穩定化，而不是再引入新的 Gateway 路由表面。
+
+### Restart／recovery
+
+- **restart continuation authority**：重啟續接的權限在 shutdown / retry race 中保持一致，不再因續接判定失真而丟失重啟狀態。
+- **retry budget**：`gateway.restart` 的 continuation 重試有明確 budget，避免在高抖動環境無限續接。
+- **config reread**：in-process restart 會重新讀取磁碟上的設定，避免用舊 snapshot 繼續跑。
+- **session delivery queue recovery**：delivery queue 與 storage recovery 路徑更一致，減少隊列殘留與誤判。
+
+### Session／memory 邊界
+
+- **stale CLI run-context** 與 **atomic reindex cleanup** 的修補，使 Gateway 與 memory-core 的恢復流程更能在失敗後收斂到一致狀態。
 
 ---
 

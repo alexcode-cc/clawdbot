@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.9-beta.1` | Node.js `>=22.16.0`
+> 版本：`2026.5.10-beta.6` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.9-beta.1 或更新版本
+# 應顯示 2026.5.10-beta.6 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,13 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.9）
+## CLI 改善（2026.4.22–2026.5.10）
+
+### 2026.5.10（精選，對齊 `CHANGELOG`）
+
+- **Subagents**：`agents.defaults.subagents.delegationMode: "prefer"` 只是提示層級的偏好，不會改變工具政策；`/subagents spawn` 與 `sessions_spawn` 的主控提示因此更傾向把慢任務交出去。
+- **Gateway restart**：`openclaw gateway restart` 相關的續接 / retry / config reread 行為更穩，對應 Gateway 的 restart continuation authority 修補。
+- **Channel docs**：`openclaw channels` 與相關 help text 仍以最新頻道表為準，ClickClack 已出現在頻道文檔與索引。
 
 ### 2026.5.9（精選，對齊 `CHANGELOG`)
 
@@ -2075,4 +2081,4 @@ openclaw setup
 - **`openclaw plugins`**：managed plugin install／rollback／repair／uninstall 使用 absolute POSIX npm lifecycle shell；source cleanup 與 external setup runtime repair 更穩。
 - **`openclaw infer model run`**：Codex probe 錯誤細節更可見；HEIC model-run 檔案會正規化處理。
 
-*本文件基於 OpenClaw `2026.5.9-beta.1` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+*本文件基於 OpenClaw `2026.5.10-beta.6` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
