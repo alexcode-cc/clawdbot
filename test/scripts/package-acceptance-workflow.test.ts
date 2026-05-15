@@ -39,18 +39,24 @@ function readWorkflow(path: string): Workflow {
 
 function workflowJob(path: string, jobName: string): WorkflowJob {
   const job = readWorkflow(path).jobs?.[jobName];
-  expect(job, `expected workflow job ${jobName}`).toBeDefined();
-  return job!;
+  if (!job) {
+    throw new Error(`Expected workflow job ${jobName} in ${path}`);
+  }
+  return job;
 }
 
 function workflowStep(job: WorkflowJob, stepName: string): WorkflowStep {
   const step = job.steps?.find((candidate) => candidate.name === stepName);
-  expect(step, `expected workflow step ${stepName}`).toBeDefined();
-  return step!;
+  if (!step) {
+    throw new Error(`Expected workflow step ${stepName}`);
+  }
+  return step;
 }
 
 function expectTextToIncludeAll(text: string | undefined, snippets: string[]): void {
-  expect(text).toBeDefined();
+  if (text === undefined) {
+    throw new Error("Expected text to be defined before checking snippets");
+  }
   for (const snippet of snippets) {
     expect(text).toContain(snippet);
   }
@@ -92,17 +98,20 @@ describe("package acceptance workflow", () => {
     expect(workflow).toContain("suite_profile:");
     expect(workflow).toContain("published_upgrade_survivor_baseline:");
     expect(workflow).toContain("published_upgrade_survivor_baselines:");
+    expect(workflow).toContain("last-stable-4");
     expect(workflow).toContain("all-since-2026.4.23");
     expect(workflow).toContain("published_upgrade_survivor_scenarios:");
     expect(workflow).toContain("scripts/resolve-upgrade-survivor-baselines.mjs");
     expect(workflow).toContain("--history-count 6");
     expect(workflow).toContain("--include-version 2026.4.23");
     expect(workflow).toContain("--pre-date 2026-03-15T00:00:00Z");
+    expect(workflow).toContain('"last-stable-"');
     expect(workflow).toContain('"all-since-"');
     expect(workflow).toContain("npm-onboard-channel-agent gateway-network config-reload");
     expect(workflow).toContain("npm-onboard-channel-agent doctor-switch");
     expect(workflow).toContain("update-channel-switch update-corrupt-plugin upgrade-survivor");
     expect(workflow).toContain("published-upgrade-survivor");
+    expect(workflow).toContain("published-upgrade-survivor update-restart-auth");
     expect(workflow).toContain("plugins-offline plugin-update");
     expect(workflow).toContain("include_release_path_suites=true");
     expect(workflow).not.toContain("telegram_mode requires source=npm");
@@ -199,7 +208,7 @@ describe("package artifact reuse", () => {
       "OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC: ${{ inputs.published_upgrade_survivor_baseline }}",
     );
     expect(workflow).toContain(
-      "OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS: ${{ inputs.published_upgrade_survivor_baselines }}",
+      "OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS: ${{ matrix.group.published_upgrade_survivor_baselines || inputs.published_upgrade_survivor_baselines }}",
     );
     expect(workflow).toContain(
       "OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS: ${{ inputs.published_upgrade_survivor_scenarios }}",
@@ -221,7 +230,10 @@ describe("package artifact reuse", () => {
     expect(workflow).toContain("node .release-harness/scripts/docker-e2e.mjs github-outputs");
     expect(workflow).toContain("bash .release-harness/scripts/ci-docker-pull-retry.sh");
     const prepareDockerImage = workflowJob(LIVE_E2E_WORKFLOW, "prepare_docker_e2e_image");
-    expect(workflowStep(prepareDockerImage, "Plan Docker E2E images").env).toMatchObject({
+    expect(workflowStep(prepareDockerImage, "Plan Docker E2E images").env).toEqual({
+      INCLUDE_OPENWEBUI: "${{ inputs.include_openwebui }}",
+      INCLUDE_RELEASE_PATH_SUITES: "${{ inputs.include_release_path_suites }}",
+      LANES: "${{ inputs.docker_lanes }}",
       OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC: "${{ inputs.published_upgrade_survivor_baseline }}",
       OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS:
         "${{ inputs.published_upgrade_survivor_baselines }}",
@@ -229,8 +241,13 @@ describe("package artifact reuse", () => {
     });
     expect(workflow).toContain("plan_docker_lane_groups:");
     expect(workflow).toContain("targeted_docker_lane_group_size:");
+    expect(workflow).toContain("scripts/plan-targeted-docker-lane-groups.mjs");
+    expect(workflow).toContain(
+      "OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS: ${{ inputs.published_upgrade_survivor_baselines }}",
+    );
     expect(workflow).toContain("Docker E2E targeted lanes (${{ matrix.group.label }})");
     expect(workflow).toContain("LANES: ${{ matrix.group.docker_lanes }}");
+    expect(workflow).toContain("GROUP_LABEL: ${{ matrix.group.label }}");
     expect(workflow).toContain("DOCKER_E2E_LANES: ${{ matrix.group.docker_lanes }}");
     expect(workflow).toContain("name: docker-e2e-${{ steps.plan.outputs.artifact_suffix }}");
     expect(scheduler).toContain(
@@ -245,7 +262,19 @@ describe("package artifact reuse", () => {
     expect(scheduler).toContain('["OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS",');
     expect(scheduler).toContain('["OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS",');
     expect(packageJson).toContain("OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1");
+    expect(packageJson).toContain("test:docker:update-restart-auth");
+    expect(packageJson).toContain("OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE=auto-auth");
     expect(publishedUpgradeSurvivor).toContain("validate_baseline_package_spec");
+    expect(publishedUpgradeSurvivor).toContain("OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE");
+    expect(publishedUpgradeSurvivor).toContain('local shim_dir="$npm_config_prefix/bin"');
+    expect(publishedUpgradeSurvivor).toContain("seed_update_restart_probe_device_auth");
+    expect(publishedUpgradeSurvivor).toContain("upgrade survivor restart probe");
+    expect(publishedUpgradeSurvivor).toContain("write_update_restart_service_secretref_env");
+    expect(publishedUpgradeSurvivor).toContain("GATEWAY_AUTH_TOKEN_REF=%s");
+    expect(publishedUpgradeSurvivor).toContain(
+      "env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD openclaw",
+    );
+    expect(publishedUpgradeSurvivor).toContain("phase prepare-update-restart-probe");
     expect(publishedUpgradeSurvivor).toContain("openclaw@(alpha|beta|latest|");
     expect(publishedUpgradeSurvivor).toContain("plugin_deps_cleanup_plugin_dirs");
     expect(publishedUpgradeSurvivor).toContain('"$(package_root)/extensions/$plugin"');
@@ -341,7 +370,7 @@ describe("package artifact reuse", () => {
     expect(workflow).toContain("OPENCLAW_LIVE_CLI_BACKEND_MODEL=codex-cli/gpt-5.4");
     expect(workflow).toContain("OPENCLAW_LIVE_CLI_BACKEND_AUTH=api-key");
     expect(workflow).toContain("OPENCLAW_LIVE_CLI_BACKEND_USE_CI_SAFE_CODEX_CONFIG=1");
-    expect((workflow.match(/service_tier=\\"fast\\"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((workflow.match(/service_tier=\\"priority\\"/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect(workflow).not.toContain(
       'OPENCLAW_LIVE_CLI_BACKEND_ARGS=["exec","--json","--color","never","--sandbox","danger-full-access","--skip-git-repo-check"]',
     );
@@ -527,17 +556,17 @@ describe("package artifact reuse", () => {
     );
     expect(workflow).toContain("suite_profile: custom");
     expect(workflow).toContain(
-      "docker_lanes: doctor-switch update-channel-switch update-corrupt-plugin upgrade-survivor published-upgrade-survivor plugins-offline plugin-update",
+      "docker_lanes: doctor-switch update-channel-switch update-corrupt-plugin upgrade-survivor published-upgrade-survivor update-restart-auth plugins-offline plugin-update",
     );
     expect(workflow).toContain(
-      "published_upgrade_survivor_baselines: ${{ needs.resolve_target.outputs.run_release_soak == 'true' && 'all-since-2026.4.23' || '' }}",
+      "published_upgrade_survivor_baselines: ${{ needs.resolve_target.outputs.run_release_soak == 'true' && 'last-stable-4 2026.4.23 2026.5.2 2026.4.15' || '' }}",
     );
     expect(workflow).toContain(
       "published_upgrade_survivor_scenarios: ${{ needs.resolve_target.outputs.run_release_soak == 'true' && 'reported-issues' || '' }}",
     );
     expect(workflow).toContain("telegram_mode: mock-openai");
     expect(workflow).toContain(
-      "telegram_scenarios: telegram-help-command,telegram-commands-command,telegram-tools-compact-command,telegram-whoami-command,telegram-context-command,telegram-current-session-status-tool,telegram-mention-gating",
+      "telegram_scenarios: telegram-help-command,telegram-commands-command,telegram-tools-compact-command,telegram-whoami-command,telegram-status-command,telegram-other-bot-command-gating,telegram-context-command,telegram-mentioned-message-reply,telegram-reply-chain-exact-marker,telegram-stream-final-single-message,telegram-long-final-reuses-preview,telegram-mention-gating",
     );
     expect(workflow).toContain("ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}");
     expect(workflow).toContain("ANTHROPIC_API_TOKEN: ${{ secrets.ANTHROPIC_API_TOKEN }}");
@@ -590,16 +619,21 @@ describe("package artifact reuse", () => {
     );
   });
 
-  it("keeps Slack live QA disabled in CI until credentials are provisioned", () => {
+  it("runs live transport lanes nightly while release checks stay gated", () => {
     const releaseWorkflow = readFileSync(RELEASE_CHECKS_WORKFLOW, "utf8");
     const qaWorkflow = readFileSync(QA_LIVE_TRANSPORTS_WORKFLOW, "utf8");
 
-    expect(releaseWorkflow).toContain("qa_live_slack_enabled=false");
-    expect(releaseWorkflow).toContain(
-      "RELEASE_QA_SLACK_LIVE_CI_ENABLED: ${{ vars.OPENCLAW_QA_SLACK_LIVE_CI_ENABLED || 'false' }}",
-    );
-    expect(releaseWorkflow).toContain("vars.OPENCLAW_QA_SLACK_LIVE_CI_ENABLED == 'true'");
-    expect(qaWorkflow).toContain("if: vars.OPENCLAW_QA_SLACK_LIVE_CI_ENABLED == 'true'");
+    for (const channel of ["DISCORD", "WHATSAPP", "SLACK"]) {
+      const lower = channel.toLowerCase();
+      expect(releaseWorkflow).toContain(
+        `RELEASE_QA_${channel}_LIVE_CI_ENABLED: \${{ vars.OPENCLAW_RELEASE_QA_${channel}_LIVE_CI_ENABLED || 'false' }}`,
+      );
+      expect(releaseWorkflow).toContain(`qa_live_${lower}_enabled="$qa_live_${lower}_ci_enabled"`);
+      expect(releaseWorkflow).toContain(
+        `vars.OPENCLAW_RELEASE_QA_${channel}_LIVE_CI_ENABLED == 'true'`,
+      );
+      expect(qaWorkflow).not.toContain(`OPENCLAW_QA_${channel}_LIVE_CI_ENABLED`);
+    }
   });
 
   it("names package acceptance Telegram as artifact-backed package validation", () => {
@@ -641,9 +675,14 @@ describe("package artifact reuse", () => {
     expect(npmTelegramJob.if).toContain(
       "inputs.rerun_group == 'all' && inputs.release_profile == 'full'",
     );
-    expect(dispatchStep.env).toMatchObject({
+    expect(dispatchStep.env).toEqual({
+      CHILD_WORKFLOW_REF: "${{ github.ref_name }}",
+      GH_TOKEN: "${{ github.token }}",
       PACKAGE_ARTIFACT_NAME: "${{ needs.prepare_release_package.outputs.artifact_name }}",
+      PACKAGE_SPEC: "${{ inputs.npm_telegram_package_spec }}",
       PREPARE_PACKAGE_RESULT: "${{ needs.prepare_release_package.result }}",
+      PROVIDER_MODE: "${{ inputs.npm_telegram_provider_mode }}",
+      SCENARIO: "${{ inputs.npm_telegram_scenario }}",
       TARGET_SHA: "${{ needs.resolve_target.outputs.sha }}",
     });
     expectTextToIncludeAll(dispatchStep.run, [
@@ -703,16 +742,18 @@ describe("package artifact reuse", () => {
     const validateStep = workflowStep(job, "Validate inputs and secrets");
     const runStep = workflowStep(job, "Run package Telegram E2E");
 
-    expect(currentRunDownload).toMatchObject({
+    expect(currentRunDownload).toEqual({
       if: "inputs.package_artifact_name != '' && inputs.package_artifact_run_id == ''",
+      name: "Download package-under-test artifact",
       uses: "actions/download-artifact@v8",
       with: {
         name: "${{ inputs.package_artifact_name }}",
         path: ".artifacts/telegram-package-under-test",
       },
     });
-    expect(releaseRunDownload).toMatchObject({
+    expect(releaseRunDownload).toEqual({
       if: "inputs.package_artifact_name != '' && inputs.package_artifact_run_id != ''",
+      name: "Download package-under-test artifact from release run",
       uses: "actions/download-artifact@v8",
       with: {
         "github-token": "${{ github.token }}",

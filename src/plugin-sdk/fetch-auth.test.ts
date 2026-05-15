@@ -125,7 +125,8 @@ describe("fetchWithBearerAuthScopeFallback", () => {
       enumerable: false,
     });
     const fetchFn = vi.fn(async (_url: string, init?: RequestInit) => {
-      expect(() => new Headers(init?.headers)).not.toThrow();
+      const normalizedHeaders = new Headers(init?.headers);
+      expect(normalizedHeaders.get("accept")).toBe("application/json");
       return fetchFn.mock.calls.length === 1
         ? new Response("unauthorized", { status: 401 })
         : new Response("ok", { status: 200 });
@@ -142,7 +143,9 @@ describe("fetchWithBearerAuthScopeFallback", () => {
 
     expect(response.status).toBe(200);
     expect(fetchFn).toHaveBeenCalledTimes(2);
-    expect(Object.getOwnPropertySymbols(fetchFn.mock.calls[0]?.[1]?.headers as object)).toEqual([]);
+    expect(
+      Object.getOwnPropertySymbols(fetchFn.mock.calls[0]?.[1]?.headers as object),
+    ).toStrictEqual([]);
     expect(new Headers(fetchFn.mock.calls[1]?.[1]?.headers).get("authorization")).toBe(
       "Bearer token-1",
     );

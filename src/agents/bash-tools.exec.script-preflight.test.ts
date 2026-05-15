@@ -1,8 +1,8 @@
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { __setFsSafeTestHooksForTest } from "../infra/fs-safe.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 import { __testing, createExecTool } from "./bash-tools.exec.js";
 
@@ -490,7 +490,9 @@ describeNonWin("exec script preflight", () => {
         }),
       ).resolves.toBeUndefined();
       expect(scriptOpenFlags.length).toBeGreaterThan(0);
-      expect(scriptOpenFlags.some((flags) => (flags & fsConstants.O_NONBLOCK) !== 0)).toBe(true);
+      expect(scriptOpenFlags.filter((flags) => (flags & fsConstants.O_NONBLOCK) !== 0)).not.toEqual(
+        [],
+      );
     });
   });
 

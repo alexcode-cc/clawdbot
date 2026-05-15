@@ -20,6 +20,7 @@ describe("parseDiscordTarget", () => {
       { input: "user:789", id: "789", normalized: "user:789" },
       { input: "discord:user:789", id: "789", normalized: "user:789" },
       { input: "discord:987", id: "987", normalized: "user:987" },
+      { input: "discord:user:987", id: "987", normalized: "user:987" },
     ] as const;
     for (const testCase of cases) {
       expect(parseDiscordTarget(testCase.input), testCase.input).toMatchObject({

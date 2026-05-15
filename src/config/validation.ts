@@ -1,7 +1,7 @@
 import path from "node:path";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/ids.js";
-import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js";
+import { isPathInside } from "../infra/path-guards.js";
 import { planManifestModelCatalogSuppressions } from "../model-catalog/index.js";
 import { withBundledPluginAllowlistCompat } from "../plugins/bundled-compat.js";
 import {
@@ -1437,8 +1437,8 @@ function validateConfigObjectWithPluginsBase(
       }
       if (
         sourcePath === resolvedLoadPath ||
-        sourcePath.startsWith(`${resolvedLoadPath}${path.sep}`) ||
-        resolvedLoadPath.startsWith(`${sourcePath}${path.sep}`)
+        isPathInside(resolvedLoadPath, sourcePath) ||
+        isPathInside(sourcePath, resolvedLoadPath)
       ) {
         return true;
       }

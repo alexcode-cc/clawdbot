@@ -154,6 +154,9 @@ vi.mock("../config/config.js", () => ({
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: () => "main",
   resolveAgentDir: () => "/tmp/agent",
+  resolveAgentConfig: () => ({}),
+  resolveAgentEffectiveModelPrimary: () => undefined,
+  resolveAgentModelFallbacksOverride: () => [],
 }));
 
 vi.mock("../agents/model-catalog.js", () => ({
@@ -374,6 +377,42 @@ describe("capability cli", () => {
     }) as never);
   });
 
+  async function runModelRunWithModel(model: string, transport: "local" | "gateway") {
+    await runRegisteredCli({
+      register: registerCapabilityCli as (program: Command) => void,
+      argv: [
+        "capability",
+        "model",
+        "run",
+        "--model",
+        model,
+        "--prompt",
+        "hello",
+        ...(transport === "gateway" ? ["--gateway"] : []),
+        "--json",
+      ],
+    });
+  }
+
+  function expectModelRunDispatch(transport: "local" | "gateway", modelRef: string) {
+    if (transport === "gateway") {
+      const slash = modelRef.indexOf("/");
+      expect(mocks.callGateway).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "agent",
+          params: expect.objectContaining({
+            provider: modelRef.slice(0, slash),
+            model: modelRef.slice(slash + 1),
+          }),
+        }),
+      );
+      return;
+    }
+    expect(mocks.prepareSimpleCompletionModelForAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ modelRef }),
+    );
+  }
+
   it("lists canonical capabilities", async () => {
     await runRegisteredCli({
       register: registerCapabilityCli as (program: Command) => void,
@@ -381,8 +420,9 @@ describe("capability cli", () => {
     });
 
     const payload = mocks.runtime.writeJson.mock.calls[0]?.[0] as Array<{ id: string }>;
-    expect(payload.some((entry) => entry.id === "model.run")).toBe(true);
-    expect(payload.some((entry) => entry.id === "image.describe")).toBe(true);
+    expect(payload.map((entry) => entry.id)).toEqual(
+      expect.arrayContaining(["model.run", "image.describe"]),
+    );
   });
 
   it("defaults model run to local transport", async () => {
@@ -417,16 +457,47 @@ describe("capability cli", () => {
     );
     expect(mocks.completeWithPreparedSimpleCompletionModel).toHaveBeenCalledWith(
       expect.objectContaining({
-        context: {
+        context: expect.objectContaining({
           messages: [
             expect.objectContaining({
               role: "user",
               content: "hello",
             }),
           ],
-        },
+        }),
       }),
     );
+    const calls = mocks.completeWithPreparedSimpleCompletionModel.mock.calls as unknown as Array<
+      [{ context?: { systemPrompt?: string } }]
+    >;
+    const call = calls[0]?.[0];
+    expect(call.context).not.toHaveProperty("systemPrompt");
+  });
+
+  it("opts explicit local provider/model probes into bundled static catalog fallback", async () => {
+    await runModelRunWithModel("mistral/mistral-medium-3-5", "local");
+
+    expect(mocks.prepareSimpleCompletionModelForAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelRef: "mistral/mistral-medium-3-5",
+        allowBundledStaticCatalogFallback: true,
+        skipPiDiscovery: true,
+      }),
+    );
+  });
+
+  it("does not enable bundled static catalog fallback without an explicit provider/model override", async () => {
+    await runRegisteredCli({
+      register: registerCapabilityCli as (program: Command) => void,
+      argv: ["capability", "model", "run", "--prompt", "hello", "--json"],
+    });
+
+    const calls = mocks.prepareSimpleCompletionModelForAgent.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    const params = calls[0]?.[0];
+    expect(params).toBeDefined();
+    expect(params).not.toHaveProperty("allowBundledStaticCatalogFallback");
   });
 
   it("passes image files to local model probes", async () => {
@@ -449,7 +520,7 @@ describe("capability cli", () => {
 
     expect(mocks.completeWithPreparedSimpleCompletionModel).toHaveBeenCalledWith(
       expect.objectContaining({
-        context: {
+        context: expect.objectContaining({
           messages: [
             expect.objectContaining({
               role: "user",
@@ -459,9 +530,14 @@ describe("capability cli", () => {
               ],
             }),
           ],
-        },
+        }),
       }),
     );
+    const calls = mocks.completeWithPreparedSimpleCompletionModel.mock.calls as unknown as Array<
+      [{ context?: { systemPrompt?: string } }]
+    >;
+    const call = calls[0]?.[0];
+    expect(call.context).not.toHaveProperty("systemPrompt");
     expect(mocks.runtime.writeJson).toHaveBeenCalledWith(
       expect.objectContaining({
         inputs: [
@@ -470,6 +546,70 @@ describe("capability cli", () => {
             mimeType: "image/png",
           }),
         ],
+      }),
+    );
+  });
+
+  it("adds minimal instructions only for openai-codex local model probes", async () => {
+    mocks.prepareSimpleCompletionModelForAgent.mockResolvedValueOnce({
+      selection: {
+        provider: "openai-codex",
+        modelId: "gpt-5.5",
+        agentDir: "/tmp/agent",
+      },
+      model: {
+        provider: "openai-codex",
+        id: "gpt-5.5",
+        api: "openai-codex-responses",
+        maxTokens: 128,
+      },
+      auth: {
+        apiKey: "codex-app-server",
+        source: "codex-app-server",
+        mode: "token",
+      },
+    } as never);
+
+    await runRegisteredCli({
+      register: registerCapabilityCli as (program: Command) => void,
+      argv: [
+        "capability",
+        "model",
+        "run",
+        "--model",
+        "openai-codex/gpt-5.5",
+        "--prompt",
+        "hello",
+        "--json",
+      ],
+    });
+
+    expect(mocks.completeWithPreparedSimpleCompletionModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          systemPrompt: "You are a personal assistant running inside OpenClaw.",
+          messages: [
+            expect.objectContaining({
+              role: "user",
+              content: "hello",
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("passes thinking overrides to local model probes", async () => {
+    await runRegisteredCli({
+      register: registerCapabilityCli as (program: Command) => void,
+      argv: ["capability", "model", "run", "--prompt", "hello", "--thinking", "high", "--json"],
+    });
+
+    expect(mocks.completeWithPreparedSimpleCompletionModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          reasoning: "high",
+        }),
       }),
     );
   });
@@ -604,6 +744,26 @@ describe("capability cli", () => {
 
     expect(mocks.runtime.error).toHaveBeenCalledWith(
       expect.stringContaining('No text output returned for provider "openai" model "gpt-5.4"'),
+    );
+    expect(mocks.runtime.writeJson).not.toHaveBeenCalled();
+  });
+
+  it("surfaces provider errors when local model probes return no text output", async () => {
+    mocks.completeWithPreparedSimpleCompletionModel.mockResolvedValueOnce({
+      content: [],
+      stopReason: "error",
+      errorMessage: '{"detail":"Instructions are required"}',
+    } as never);
+
+    await expect(
+      runRegisteredCli({
+        register: registerCapabilityCli as (program: Command) => void,
+        argv: ["capability", "model", "run", "--prompt", "hello", "--json"],
+      }),
+    ).rejects.toThrow("exit 1");
+
+    expect(mocks.runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining('{"detail":"Instructions are required"}'),
     );
     expect(mocks.runtime.writeJson).not.toHaveBeenCalled();
   });
@@ -759,6 +919,104 @@ describe("capability cli", () => {
         }),
       }),
     );
+  });
+
+  it.each(["local", "gateway"] as const)(
+    "canonicalizes case-only catalog model refs before %s dispatch",
+    async (transport) => {
+      mocks.loadModelCatalog.mockResolvedValueOnce([
+        { id: "claude-opus-4-7", provider: "anthropic", name: "Claude Opus 4.7" },
+      ] as never);
+
+      await runModelRunWithModel("Anthropic/CLAUDE-OPUS-4-7", transport);
+
+      expect(mocks.loadModelCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({ readOnly: true }),
+      );
+      expectModelRunDispatch(transport, "anthropic/claude-opus-4-7");
+    },
+  );
+
+  it("canonicalizes case-only catalog refs and preserves auth profiles before local dispatch", async () => {
+    mocks.loadModelCatalog.mockResolvedValueOnce([
+      { id: "claude-opus-4-7", provider: "anthropic", name: "Claude Opus 4.7" },
+    ] as never);
+
+    await runModelRunWithModel("Anthropic/CLAUDE-OPUS-4-7@work", "local");
+
+    expectModelRunDispatch("local", "anthropic/claude-opus-4-7@work");
+  });
+
+  it("leaves auth profile refs unchanged before gateway dispatch", async () => {
+    mocks.loadModelCatalog.mockResolvedValueOnce([
+      { id: "claude-opus-4-7", provider: "anthropic", name: "Claude Opus 4.7" },
+    ] as never);
+
+    await runModelRunWithModel("Anthropic/CLAUDE-OPUS-4-7@work", "gateway");
+
+    expectModelRunDispatch("gateway", "Anthropic/CLAUDE-OPUS-4-7@work");
+  });
+
+  it("preserves custom mixed-case profile refs before local dispatch when the catalog has no match", async () => {
+    mocks.loadModelCatalog.mockResolvedValueOnce([] as never);
+
+    await runModelRunWithModel("custom/MyModel@work", "local");
+
+    expectModelRunDispatch("local", "custom/MyModel@work");
+  });
+
+  it("passes thinking overrides to gateway model probes", async () => {
+    await runRegisteredCli({
+      register: registerCapabilityCli as (program: Command) => void,
+      argv: [
+        "capability",
+        "model",
+        "run",
+        "--prompt",
+        "hello",
+        "--gateway",
+        "--thinking",
+        "high",
+        "--json",
+      ],
+    });
+
+    expect(mocks.callGateway).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "agent",
+        params: expect.objectContaining({
+          thinking: "high",
+          modelRun: true,
+          promptMode: "none",
+        }),
+      }),
+    );
+  });
+
+  it("rejects invalid model run thinking overrides before dispatch", async () => {
+    await expect(
+      runRegisteredCli({
+        register: registerCapabilityCli as (program: Command) => void,
+        argv: [
+          "capability",
+          "model",
+          "run",
+          "--prompt",
+          "hello",
+          "--thinking",
+          "turbo-mode",
+          "--json",
+        ],
+      }),
+    ).rejects.toThrow("exit 1");
+
+    expect(mocks.runtime.error).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid thinking level."),
+    );
+    expect(mocks.prepareSimpleCompletionModelForAgent).not.toHaveBeenCalled();
+    expect(mocks.completeWithPreparedSimpleCompletionModel).not.toHaveBeenCalled();
+    expect(mocks.callGateway).not.toHaveBeenCalled();
+    expect(mocks.runtime.writeJson).not.toHaveBeenCalled();
   });
 
   it("rejects empty model run prompts before gateway dispatch", async () => {

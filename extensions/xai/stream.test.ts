@@ -1,6 +1,8 @@
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import type { Api, Context, Model } from "@mariozechner/pi-ai";
+import { streamSimpleOpenAIResponses } from "@mariozechner/pi-ai/openai-responses";
 import { describe, expect, it } from "vitest";
+import { applyXaiRuntimeModelCompat } from "./runtime-model-compat.js";
 import {
   createXaiFastModeWrapper,
   createXaiToolPayloadCompatibilityWrapper,
@@ -65,6 +67,44 @@ function runXaiToolPayloadWrapper(params: {
     { messages: [] } as Context,
     {},
   );
+}
+
+async function captureXaiResponsesPayloadWithThinking(): Promise<Record<string, unknown>> {
+  const model = applyXaiRuntimeModelCompat({
+    api: "openai-responses",
+    provider: "xai",
+    id: "grok-4.3",
+    baseUrl: "https://api.x.ai/v1",
+    reasoning: true,
+    input: ["text", "image"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 1_000_000,
+    maxTokens: 64_000,
+  } as Model<"openai-responses">);
+
+  const payloadPromise = new Promise<Record<string, unknown>>((resolve, reject) => {
+    const timeout = setTimeout(
+      () => reject(new Error("provider payload callback was not invoked")),
+      1_000,
+    );
+    const stream = streamSimpleOpenAIResponses(
+      model,
+      { messages: [{ role: "user", content: "hello", timestamp: 0 }] },
+      {
+        apiKey: "test-api-key",
+        cacheRetention: "none",
+        reasoning: "low",
+        onPayload: (payload) => {
+          clearTimeout(timeout);
+          resolve(structuredClone(payload as Record<string, unknown>));
+          throw new Error("stop after payload capture");
+        },
+      },
+    );
+    void stream.result();
+  });
+
+  return await payloadPromise;
 }
 
 describe("xai stream wrappers", () => {
@@ -141,26 +181,11 @@ describe("xai stream wrappers", () => {
     expect(payload).not.toHaveProperty("reasoning_effort");
   });
 
-  it("disables transport-level reasoning metadata for xai models", () => {
-    let capturedReasoning: unknown = true;
-    const baseStreamFn: StreamFn = (model) => {
-      capturedReasoning = model.reasoning;
-      return {} as ReturnType<StreamFn>;
-    };
+  it("marks native xAI Responses thinking efforts unsupported before pi-ai builds payloads", async () => {
+    const payload = await captureXaiResponsesPayloadWithThinking();
 
-    const wrapped = createXaiToolPayloadCompatibilityWrapper(baseStreamFn);
-    void wrapped(
-      {
-        api: "openai-responses",
-        provider: "xai",
-        id: "grok-4.3",
-        reasoning: true,
-      } as Model<XaiStreamApi>,
-      { messages: [] } as Context,
-      {},
-    );
-
-    expect(capturedReasoning).toBe(false);
+    expect(payload).not.toHaveProperty("reasoning");
+    expect(payload).not.toHaveProperty("include");
   });
 
   it("moves image-bearing tool results out of function_call_output payloads", () => {

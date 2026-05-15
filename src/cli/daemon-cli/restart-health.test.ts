@@ -165,7 +165,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("marks non-owned gateway listener pids as stale while runtime is running", async () => {
@@ -198,7 +198,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: false,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("does not apply unknown-listener fallback while runtime is running", async () => {
@@ -207,7 +207,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: true,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("does not treat known non-gateway listeners as stale in fallback mode", async () => {
@@ -225,7 +225,7 @@ describe("inspectGatewayRestart", () => {
       includeUnknownListenersAsStale: true,
     });
 
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it("uses a local gateway probe when ownership is ambiguous", async () => {
@@ -259,7 +259,7 @@ describe("inspectGatewayRestart", () => {
     });
 
     expect(snapshot.healthy).toBe(true);
-    expect(snapshot.staleGatewayPids).toEqual([]);
+    expect(snapshot.staleGatewayPids).toStrictEqual([]);
   });
 
   it.each([
@@ -414,6 +414,10 @@ describe("inspectGatewayRestart", () => {
       server: { version: "2026.4.24", connId: "new" },
     });
     const service = makeGatewayService({ status: "running", pid: 8000 });
+    const serviceEnv = {
+      ...process.env,
+      OPENCLAW_STATE_DIR: "/tmp/openclaw-restart-service-state",
+    } as NodeJS.ProcessEnv;
     inspectPortUsage.mockResolvedValue({
       port: 18789,
       status: "busy",
@@ -427,6 +431,7 @@ describe("inspectGatewayRestart", () => {
       port: 18789,
       expectedVersion: "2026.4.24",
       attempts: 1,
+      env: serviceEnv,
     });
 
     expect(snapshot).toMatchObject({
@@ -443,6 +448,7 @@ describe("inspectGatewayRestart", () => {
     expect(probeGateway).toHaveBeenCalledWith(
       expect.objectContaining({
         auth: { token: "probe-token", password: undefined },
+        env: serviceEnv,
       }),
     );
   });

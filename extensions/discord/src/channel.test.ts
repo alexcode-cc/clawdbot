@@ -5,8 +5,10 @@ import { createStartAccountContext } from "openclaw/plugin-sdk/channel-test-help
 import type { PluginRuntime } from "openclaw/plugin-sdk/core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedDiscordAccount } from "./accounts.js";
+import * as directoryLive from "./directory-live.js";
 import type { OpenClawConfig } from "./runtime-api.js";
 import * as sendModule from "./send.js";
+import { createDiscordSendReceipt } from "./send.receipt.js";
 import { EMPTY_DISCORD_TEST_CONFIG } from "./test-support/config.js";
 let discordPlugin: typeof import("./channel.js").discordPlugin;
 let setDiscordRuntime: typeof import("./runtime.js").setDiscordRuntime;
@@ -18,6 +20,14 @@ const collectDiscordAuditChannelIdsMock = vi.hoisted(() =>
   vi.fn(() => ({ channelIds: [], unresolvedChannels: 0 })),
 );
 const sleepWithAbortMock = vi.hoisted(() => vi.fn(async () => undefined));
+
+function discordTestSendResult(messageId: string, channelId = "channel:thread-123") {
+  return {
+    messageId,
+    channelId,
+    receipt: createDiscordSendReceipt({ platformMessageIds: [messageId], channelId, kind: "text" }),
+  };
+}
 
 vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
@@ -164,7 +174,10 @@ describe("discordPlugin outbound", () => {
     });
   });
 
-  it("resolves bare allowlisted Discord user IDs as message-tool DM targets", async () => {
+  it("resolves Discord usernames through the messaging target resolver", async () => {
+    vi.spyOn(directoryLive, "listDiscordDirectoryPeersLive").mockResolvedValueOnce([
+      { kind: "user", id: "user:999", name: "Jane" } as const,
+    ]);
     const resolveTarget = discordPlugin.messaging?.targetResolver?.resolveTarget;
     if (!resolveTarget) {
       throw new Error(
@@ -174,20 +187,17 @@ describe("discordPlugin outbound", () => {
 
     await expect(
       resolveTarget({
-        cfg: {
-          channels: {
-            discord: {
-              allowFrom: ["1439091261670948987"],
-            },
-          },
-        } as OpenClawConfig,
-        input: "1439091261670948987",
-        normalized: "channel:1439091261670948987",
-        preferredKind: "channel",
+        cfg: createCfg(),
+        accountId: "default",
+        input: "jane",
+        normalized: "channel:jane",
+        preferredKind: "user",
       }),
-    ).resolves.toMatchObject({
-      to: "user:1439091261670948987",
+    ).resolves.toEqual({
+      to: "user:999",
       kind: "user",
+      display: "jane",
+      source: "directory",
     });
   });
 
@@ -278,8 +288,8 @@ describe("discordPlugin outbound", () => {
   it("splits text and video into separate sends for attached outbound delivery", async () => {
     const sendMessageDiscord = vi
       .fn()
-      .mockResolvedValueOnce({ messageId: "text-1" })
-      .mockResolvedValueOnce({ messageId: "video-1" });
+      .mockResolvedValueOnce(discordTestSendResult("text-1"))
+      .mockResolvedValueOnce(discordTestSendResult("video-1"));
 
     const result = await discordPlugin.outbound!.sendMedia!({
       cfg: EMPTY_DISCORD_TEST_CONFIG,
@@ -315,10 +325,7 @@ describe("discordPlugin outbound", () => {
   });
 
   it("threads poll sends through the thread target", async () => {
-    const sendPollDiscord = vi.fn(async () => ({
-      channelId: "channel:thread-123",
-      messageId: "poll-1",
-    }));
+    const sendPollDiscord = vi.fn(async () => discordTestSendResult("poll-1"));
     const sendPollSpy = vi.spyOn(sendModule, "sendPollDiscord").mockImplementation(sendPollDiscord);
     try {
       const result = await discordPlugin.outbound!.sendPoll!({
@@ -488,12 +495,14 @@ describe("discordPlugin outbound", () => {
   });
 
   it("does not block Discord monitor startup on the startup probe", async () => {
-    let resolveProbe!: (value: {
-      ok: true;
-      bot: { username: string };
-      application: { intents: { messageContent: "limited" } };
-      elapsedMs: number;
-    }) => void;
+    let resolveProbe:
+      | ((value: {
+          ok: true;
+          bot: { username: string };
+          application: { intents: { messageContent: "limited" } };
+          elapsedMs: number;
+        }) => void)
+      | undefined;
     probeDiscordMock.mockReturnValue(
       new Promise((resolve) => {
         resolveProbe = resolve;
@@ -524,6 +533,9 @@ describe("discordPlugin outbound", () => {
     );
     expect(statusPatches.some((patch) => "bot" in patch || "application" in patch)).toBe(false);
 
+    if (!resolveProbe) {
+      throw new Error("Expected Discord startup probe resolver to be initialized");
+    }
     resolveProbe({
       ok: true,
       bot: { username: "AsyncBob" },
@@ -643,8 +655,12 @@ describe("discordPlugin outbound", () => {
     expect(sleepWithAbortMock).not.toHaveBeenCalled();
 
     // Second account (index 1) — 10s delay
-    await startDiscordAccount(cfg, "zeta");
-    expect(sleepWithAbortMock).toHaveBeenCalledWith(10_000, expect.any(Object));
+    const zetaContext = createStartAccountContext({
+      account: resolveAccount(cfg, "zeta"),
+      cfg,
+    });
+    await discordPlugin.gateway!.startAccount!(zetaContext);
+    expect(sleepWithAbortMock).toHaveBeenCalledWith(10_000, zetaContext.abortSignal);
   });
 });
 

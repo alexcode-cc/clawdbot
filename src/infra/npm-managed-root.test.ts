@@ -205,7 +205,7 @@ describe("managed npm root", () => {
         packageName: "@openclaw/feishu",
         dependencySpec: "2026.5.2",
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/JSON|package\.json|not-json/i);
 
     await expect(fs.readFile(manifestPath, "utf8")).resolves.toBe("{not-json");
   });
@@ -394,15 +394,17 @@ describe("managed npm root", () => {
         "npm",
         "uninstall",
         "--loglevel=error",
+        "--legacy-peer-deps",
         "--ignore-scripts",
         "--no-audit",
         "--no-fund",
-        "--prefix",
-        ".",
         "openclaw",
       ],
       expect.objectContaining({
         cwd: npmRoot,
+        env: expect.objectContaining({
+          npm_config_legacy_peer_deps: "true",
+        }),
       }),
     );
 

@@ -471,6 +471,208 @@ describe("runAgentTurnWithFallback", () => {
     );
   });
 
+  it("bridges CLI assistant agent events into onPartialReply for live preview (#76869)", async () => {
+    state.isCliProviderMock.mockReturnValue(true);
+    state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
+      result: await params.run("claude-cli", "claude-opus-4-6"),
+      provider: "claude-cli",
+      model: "claude-opus-4-6",
+      attempts: [],
+    }));
+    state.runCliAgentMock.mockImplementationOnce(async (params: { runId: string }) => {
+      const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
+        "../../infra/agent-events.js",
+      );
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "Hello", delta: "Hello" },
+      });
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "Hello world", delta: " world" },
+      });
+      return { payloads: [{ text: "Hello world" }], meta: {} };
+    });
+
+    const onPartialReply = vi.fn<NonNullable<GetReplyOptions["onPartialReply"]>>(
+      async (_payload) => undefined,
+    );
+    const runAgentTurnWithFallback = await getRunAgentTurnWithFallback();
+    const followupRun = createFollowupRun();
+    followupRun.run.provider = "claude-cli";
+    followupRun.run.model = "claude-opus-4-6";
+
+    await runAgentTurnWithFallback({
+      commandBody: "hi",
+      followupRun,
+      sessionCtx: {
+        Provider: "telegram",
+        MessageSid: "msg",
+      } as unknown as TemplateContext,
+      opts: { onPartialReply },
+      typingSignals: createMockTypingSignaler(),
+      blockReplyPipeline: null,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      applyReplyToMode: (payload) => payload,
+      shouldEmitToolResult: () => true,
+      shouldEmitToolOutput: () => false,
+      pendingToolTasks: new Set(),
+      resetSessionAfterCompactionFailure: async () => false,
+      resetSessionAfterRoleOrderingConflict: async () => false,
+      isHeartbeat: false,
+      sessionKey: "main",
+      getActiveSessionEntry: () => undefined,
+      resolvedVerboseLevel: "off",
+    });
+
+    const partialTexts = onPartialReply.mock.calls.map((call) => call[0].text);
+    expect(partialTexts).toEqual(["Hello", "Hello world"]);
+  });
+
+  it("serializes and drains bridged CLI assistant previews before completing (#76869)", async () => {
+    state.isCliProviderMock.mockReturnValue(true);
+    state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
+      result: await params.run("claude-cli", "claude-opus-4-6"),
+      provider: "claude-cli",
+      model: "claude-opus-4-6",
+      attempts: [],
+    }));
+    state.runCliAgentMock.mockImplementationOnce(async (params: { runId: string }) => {
+      const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
+        "../../infra/agent-events.js",
+      );
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "Hello", delta: "Hello" },
+      });
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "Hello world", delta: " world" },
+      });
+      return { payloads: [{ text: "Hello world" }], meta: {} };
+    });
+
+    let firstPreviewStarted: (() => void) | undefined;
+    let releaseFirstPreview: (() => void) | undefined;
+    const firstPreviewPromise = new Promise<void>((resolve) => {
+      firstPreviewStarted = resolve;
+    });
+    const previewOrder: string[] = [];
+    const onPartialReply = vi.fn<NonNullable<GetReplyOptions["onPartialReply"]>>(
+      async (payload) => {
+        previewOrder.push(payload.text ?? "");
+        if (payload.text === "Hello") {
+          firstPreviewStarted?.();
+          await new Promise<void>((resolve) => {
+            releaseFirstPreview = resolve;
+          });
+          previewOrder.push("Hello released");
+        }
+      },
+    );
+    const runAgentTurnWithFallback = await getRunAgentTurnWithFallback();
+    const followupRun = createFollowupRun();
+    followupRun.run.provider = "claude-cli";
+    followupRun.run.model = "claude-opus-4-6";
+
+    const runPromise = runAgentTurnWithFallback({
+      commandBody: "hi",
+      followupRun,
+      sessionCtx: {
+        Provider: "telegram",
+        MessageSid: "msg",
+      } as unknown as TemplateContext,
+      opts: { onPartialReply },
+      typingSignals: createMockTypingSignaler(),
+      blockReplyPipeline: null,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      applyReplyToMode: (payload) => payload,
+      shouldEmitToolResult: () => true,
+      shouldEmitToolOutput: () => false,
+      pendingToolTasks: new Set(),
+      resetSessionAfterCompactionFailure: async () => false,
+      resetSessionAfterRoleOrderingConflict: async () => false,
+      isHeartbeat: false,
+      sessionKey: "main",
+      getActiveSessionEntry: () => undefined,
+      resolvedVerboseLevel: "off",
+    });
+
+    await firstPreviewPromise;
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(previewOrder).toEqual(["Hello"]);
+
+    releaseFirstPreview?.();
+    await runPromise;
+
+    expect(previewOrder).toEqual(["Hello", "Hello released", "Hello world"]);
+  });
+
+  it("does not bridge CLI assistant deltas when silentExpected is set (#76869)", async () => {
+    state.isCliProviderMock.mockReturnValue(true);
+    state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
+      result: await params.run("claude-cli", "claude-opus-4-6"),
+      provider: "claude-cli",
+      model: "claude-opus-4-6",
+      attempts: [],
+    }));
+    state.runCliAgentMock.mockImplementationOnce(async (params: { runId: string }) => {
+      const realAgentEvents = await vi.importActual<typeof import("../../infra/agent-events.js")>(
+        "../../infra/agent-events.js",
+      );
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "secret heartbeat output", delta: "secret heartbeat output" },
+      });
+      realAgentEvents.emitAgentEvent({
+        runId: params.runId,
+        stream: "assistant",
+        data: { text: "NO_REPLY do not preview", delta: " do not preview" },
+      });
+      return { payloads: [{ text: "final" }], meta: {} };
+    });
+
+    const onPartialReply = vi.fn<NonNullable<GetReplyOptions["onPartialReply"]>>(
+      async (_payload) => undefined,
+    );
+    const runAgentTurnWithFallback = await getRunAgentTurnWithFallback();
+    const followupRun = createFollowupRun();
+    followupRun.run.provider = "claude-cli";
+    followupRun.run.model = "claude-opus-4-6";
+    followupRun.run.silentExpected = true;
+
+    await runAgentTurnWithFallback({
+      commandBody: "hi",
+      followupRun,
+      sessionCtx: { Provider: "telegram", MessageSid: "msg" } as unknown as TemplateContext,
+      opts: { onPartialReply },
+      typingSignals: createMockTypingSignaler(),
+      blockReplyPipeline: null,
+      blockStreamingEnabled: false,
+      resolvedBlockStreamingBreak: "message_end",
+      applyReplyToMode: (payload) => payload,
+      shouldEmitToolResult: () => true,
+      shouldEmitToolOutput: () => false,
+      pendingToolTasks: new Set(),
+      resetSessionAfterCompactionFailure: async () => false,
+      resetSessionAfterRoleOrderingConflict: async () => false,
+      isHeartbeat: false,
+      sessionKey: "main",
+      getActiveSessionEntry: () => undefined,
+      resolvedVerboseLevel: "off",
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(onPartialReply).not.toHaveBeenCalled();
+  });
+
   it("resolves CLI messageProvider from the live session surface when no origin channel is set", async () => {
     state.isCliProviderMock.mockReturnValue(true);
     state.runWithModelFallbackMock.mockImplementationOnce(async (params: FallbackRunnerParams) => ({
@@ -2508,6 +2710,55 @@ describe("runAgentTurnWithFallback", () => {
       expect(result.payload.text).toBe(GENERIC_RUN_FAILURE_TEXT);
     }
   });
+
+  it.each([
+    {
+      rejection: new Error("CLI exceeded timeout (300s) and was terminated."),
+      modeLabel: "overall CLI turn budget" as const,
+      routingSubstring: undefined as string | undefined,
+    },
+    {
+      rejection: new Error("CLI produced no output for 120s and was terminated."),
+      modeLabel: "no-output stall" as const,
+      routingSubstring: undefined,
+    },
+    {
+      rejection: new Error(
+        "All models failed (2): anthropic/claude-opus-4-7: CLI exceeded timeout (300s) and was terminated. | anthropic/foo: bar",
+      ),
+      modeLabel: "overall CLI turn budget" as const,
+      routingSubstring: "(routing anthropic/claude-opus-4-7)",
+    },
+    {
+      rejection: new Error("codex-cli/gpt-5.5: CLI exceeded timeout (60s) and was terminated."),
+      modeLabel: "overall CLI turn budget" as const,
+      routingSubstring: "(routing codex-cli/gpt-5.5)",
+    },
+  ])(
+    "surfaces CLI subprocess timeout copy instead of generic failure when verbose is off ($modeLabel)",
+    async ({ rejection, modeLabel, routingSubstring }) => {
+      state.runWithModelFallbackMock.mockRejectedValueOnce(rejection);
+
+      const runAgentTurnWithFallback = await getRunAgentTurnWithFallback();
+      const result = await runAgentTurnWithFallback({
+        ...createMinimalRunAgentTurnParams(),
+      });
+
+      expect(result.kind).toBe("final");
+      if (result.kind !== "final") {
+        throw new Error("expected final reply");
+      }
+      expect(result.payload.text).not.toBe(GENERIC_RUN_FAILURE_TEXT);
+      expect(result.payload.text).toContain("CLI subprocess");
+      expect(result.payload.text).not.toContain("Claude CLI");
+      expect(result.payload.text).toContain(modeLabel);
+      expect(result.payload.text).toContain("gateway may still be healthy");
+      expect(result.payload.text).toContain("cliBackends.<your-runtime>");
+      if (routingSubstring) {
+        expect(result.payload.text).toContain(routingSubstring);
+      }
+    },
+  );
 
   it("forwards sanitized generic errors on external chat channels when verbose is on", async () => {
     state.runEmbeddedPiAgentMock.mockRejectedValueOnce(

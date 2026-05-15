@@ -7,14 +7,12 @@ const mocks = vi.hoisted(() => ({
   ensureAuthProfileStore: vi.fn(),
   evaluateStoredCredentialEligibility: vi.fn(),
   getInstalledPluginRecord: vi.fn(),
-  hasUsableCustomProviderApiKey: vi.fn(),
   isInstalledPluginEnabled: vi.fn(),
   loadInstalledPluginIndex: vi.fn(),
   maybeRepairStaleManagedNpmBundledPlugins: vi.fn(),
   maybeRepairStalePluginConfig: vi.fn(),
   repairMissingConfiguredPluginInstalls: vi.fn(),
   resolveAuthProfileOrder: vi.fn(),
-  resolveEnvApiKey: vi.fn(),
   resolveProfileUnusableUntilForDisplay: vi.fn(),
 }));
 
@@ -38,11 +36,6 @@ vi.mock("../../agents/auth-profiles.js", () => ({
 
 vi.mock("../../agents/auth-profiles/credential-state.js", () => ({
   evaluateStoredCredentialEligibility: mocks.evaluateStoredCredentialEligibility,
-}));
-
-vi.mock("../../agents/model-auth.js", () => ({
-  hasUsableCustomProviderApiKey: mocks.hasUsableCustomProviderApiKey,
-  resolveEnvApiKey: mocks.resolveEnvApiKey,
 }));
 
 vi.mock("../../plugins/installed-plugin-index.js", async (importOriginal) => ({
@@ -190,7 +183,6 @@ describe("doctor repair sequencing", () => {
       reasonCode: "ok",
     });
     mocks.getInstalledPluginRecord.mockReturnValue(undefined);
-    mocks.hasUsableCustomProviderApiKey.mockReturnValue(false);
     mocks.isInstalledPluginEnabled.mockReturnValue(false);
     mocks.loadInstalledPluginIndex.mockReturnValue({ plugins: [] });
     mocks.maybeRepairStaleManagedNpmBundledPlugins.mockReturnValue(false);
@@ -199,7 +191,6 @@ describe("doctor repair sequencing", () => {
       warnings: [],
     });
     mocks.resolveAuthProfileOrder.mockReturnValue([]);
-    mocks.resolveEnvApiKey.mockReturnValue(null);
     mocks.resolveProfileUnusableUntilForDisplay.mockReturnValue(null);
     mocks.maybeRepairStalePluginConfig.mockImplementation((cfg: OpenClawConfig) => ({
       config: cfg,
@@ -351,7 +342,7 @@ describe("doctor repair sequencing", () => {
       doctorFixCommand: "openclaw doctor --fix",
     });
 
-    expect(result.changeNotes).toEqual([]);
+    expect(result.changeNotes).toStrictEqual([]);
     expect(result.warningNotes).toHaveLength(1);
     expect(result.warningNotes[0]).toContain("cannot be auto-repaired");
     expect(result.warningNotes[0]).toContain("channels.discord.allowFrom[0]");
@@ -406,24 +397,10 @@ describe("doctor repair sequencing", () => {
     );
   });
 
-  it("preserves Codex OAuth PI routes before missing plugin install repair when Codex is not ready", async () => {
-    const store = {
-      profiles: {
-        "openai-codex:default": {
-          type: "oauth",
-          provider: "openai-codex",
-          access: "access-token",
-        },
-      },
-      usageStats: {},
-    };
-    mocks.ensureAuthProfileStore.mockReturnValue(store);
-    mocks.resolveAuthProfileOrder.mockImplementation(({ provider }) =>
-      provider === "openai-codex" ? ["openai-codex:default"] : [],
-    );
+  it("moves legacy Codex routes to canonical OpenAI before missing plugin install repair", async () => {
     mocks.repairMissingConfiguredPluginInstalls.mockImplementationOnce(
       async (params: { cfg: OpenClawConfig }) => {
-        expect(params.cfg.agents?.defaults?.model).toBe("openai-codex/gpt-5.5");
+        expect(params.cfg.agents?.defaults?.model).toBe("openai/gpt-5.5");
         expect(params.cfg.agents?.defaults?.agentRuntime).toBeUndefined();
         return {
           changes: [],
@@ -455,10 +432,12 @@ describe("doctor repair sequencing", () => {
       env: {},
     });
 
-    expect(result.state.pendingChanges).toBe(false);
-    expect(result.state.candidate.agents?.defaults?.model).toBe("openai-codex/gpt-5.5");
+    expect(result.state.pendingChanges).toBe(true);
+    expect(result.state.candidate.agents?.defaults?.model).toBe("openai/gpt-5.5");
     expect(result.state.candidate.agents?.defaults?.agentRuntime).toBeUndefined();
-    expect(result.warningNotes.join("\n")).toContain("Preserved Codex OAuth model routes");
+    expect(result.changeNotes.join("\n")).toContain(
+      "agents.defaults.model: openai-codex/gpt-5.5 -> openai/gpt-5.5.",
+    );
     expect(result.changeNotes.join("\n")).not.toContain("Installed missing configured plugin");
   });
 

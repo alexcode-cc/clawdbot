@@ -150,6 +150,10 @@ function expectActiveRegistryLookup(pluginIds: string[]) {
   expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith({ onlyPluginIds: pluginIds });
 }
 
+function expectInitialRuntimeRegistryLookup() {
+  expect(mocks.resolveRuntimePluginRegistry).toHaveBeenNthCalledWith(1);
+}
+
 function collectActiveRegistryLookups() {
   return mocks.resolveRuntimePluginRegistry.mock.calls
     .map(([options]) => options)
@@ -427,7 +431,7 @@ describe("resolvePluginCapabilityProviders", () => {
 
     expectResolvedCapabilityProviderIds(providers, ["openai"]);
     expect(mocks.loadPluginManifestRegistry).not.toHaveBeenCalled();
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
   });
 
   it("targets enabled external capability plugins without bundled fallback capture", () => {
@@ -556,7 +560,7 @@ describe("resolvePluginCapabilityProviders", () => {
 
     expectResolvedCapabilityProviderIds(providers, ["deepgram"]);
     expect(mocks.loadPluginManifestRegistry).not.toHaveBeenCalled();
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
   });
 
   it("merges configured media-understanding providers missing from the active registry", () => {
@@ -623,7 +627,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
 
     expectResolvedCapabilityProviderIds(providers, ["openai", "deepgram"]);
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expectActiveRegistryLookup(["deepgram", "google"]);
   });
 
@@ -658,7 +662,7 @@ describe("resolvePluginCapabilityProviders", () => {
 
     expectResolvedCapabilityProviderIds(providers, ["microsoft"]);
     expect(mocks.loadPluginManifestRegistry).not.toHaveBeenCalled();
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
   });
 
   it("keeps active capability providers when cfg has no explicit plugin config", () => {
@@ -697,7 +701,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
 
     expectResolvedCapabilityProviderIds(providers, ["acme"]);
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expect(mocks.resolveRuntimePluginRegistry).not.toHaveBeenCalledWith({
       config: expect.anything(),
     });
@@ -762,7 +766,7 @@ describe("resolvePluginCapabilityProviders", () => {
     });
 
     expectResolvedCapabilityProviderIds(providers, ["openai", "microsoft"]);
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expectActiveRegistryLookup(["microsoft"]);
   });
 
@@ -922,6 +926,45 @@ describe("resolvePluginCapabilityProviders", () => {
       env: process.env,
       pluginSdkResolution: undefined,
     });
+  });
+
+  it("loads requested realtime voice providers missing from active registry", () => {
+    const active = createEmptyPluginRegistry();
+    active.realtimeVoiceProviders.push({
+      pluginId: "openai",
+      pluginName: "openai",
+      source: "test",
+      provider: { id: "openai" },
+    } as never);
+    const loaded = createEmptyPluginRegistry();
+    loaded.realtimeVoiceProviders.push({
+      pluginId: "google",
+      pluginName: "Google",
+      source: "test",
+      provider: { id: "google" },
+    } as never);
+    mocks.loadPluginManifestRegistry.mockReturnValue({
+      plugins: [
+        {
+          id: "google",
+          origin: "bundled",
+          contracts: { realtimeVoiceProviders: ["google"] },
+        },
+      ] as never,
+      diagnostics: [],
+    });
+    mocks.resolveRuntimePluginRegistry.mockImplementation((params?: unknown) =>
+      params === undefined ? active : loaded,
+    );
+
+    const provider = resolvePluginCapabilityProvider({
+      key: "realtimeVoiceProviders",
+      providerId: "google",
+      cfg: { plugins: { allow: ["openai", "google"] } } as OpenClawConfig,
+    });
+
+    expect(provider?.id).toBe("google");
+    expectActiveRegistryLookup(["google"]);
   });
 
   it("does not merge unrelated bundled capability providers when cfg requests one provider", () => {
@@ -1293,7 +1336,7 @@ describe("resolvePluginCapabilityProviders", () => {
       config: allowlistCompat,
       pluginIds: ["microsoft"],
     });
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expectActiveRegistryLookup(["microsoft"]);
   });
 
@@ -1314,7 +1357,7 @@ describe("resolvePluginCapabilityProviders", () => {
         env: process.env,
       }),
     );
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expectActiveRegistryLookup([]);
   });
 
@@ -1557,7 +1600,7 @@ describe("resolvePluginCapabilityProviders", () => {
       config: allowlistCompat,
       pluginIds: ["microsoft"],
     });
-    expect(mocks.resolveRuntimePluginRegistry).toHaveBeenCalledWith();
+    expectInitialRuntimeRegistryLookup();
     expectActiveRegistryLookup(["microsoft"]);
   });
 });

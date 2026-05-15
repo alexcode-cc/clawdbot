@@ -33,6 +33,7 @@ import {
   diagnosticLogger,
   markDiagnosticSessionProgress,
   resetDiagnosticStateForTest,
+  resolveStuckSessionAbortMs,
   resolveStuckSessionWarnMs,
   startDiagnosticHeartbeat,
 } from "./diagnostic.js";
@@ -49,6 +50,16 @@ function createEmitMemorySampleMock() {
 
 function flushDiagnosticEvents() {
   return new Promise<void>((resolve) => setImmediate(resolve));
+}
+
+function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean) {
+  let count = 0;
+  for (const item of items) {
+    if (predicate(item)) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 describe("diagnostic session state pruning", () => {
@@ -78,6 +89,7 @@ describe("diagnostic session state pruning", () => {
       diagnosticSessionStates.set(`session-${i}`, {
         sessionId: `session-${i}`,
         lastActivity: now + i,
+        generation: 0,
         state: "idle",
         queueDepth: 1,
       });
@@ -232,6 +244,7 @@ describe("stuck session diagnostics threshold", () => {
       sessionKey: "main",
       ageMs: expect.any(Number),
       queueDepth: 0,
+      stateGeneration: expect.any(Number),
     });
   });
 
@@ -258,7 +271,7 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.long_running")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.long_running")).toBe(false);
     const stuckEvents = events.filter((event) => event.type === "session.stuck");
     expect(stuckEvents).toHaveLength(1);
     expect(stuckEvents[0]).toMatchObject({
@@ -271,6 +284,7 @@ describe("stuck session diagnostics threshold", () => {
       sessionKey: "main",
       ageMs: expect.any(Number),
       queueDepth: 1,
+      stateGeneration: expect.any(Number),
     });
   });
 
@@ -294,9 +308,9 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.stuck")).toHaveLength(0);
-    expect(events.filter((event) => event.type === "session.stalled")).toHaveLength(0);
-    expect(events.filter((event) => event.type === "session.long_running")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.stuck")).toBe(false);
+    expect(events.some((event) => event.type === "session.stalled")).toBe(false);
+    expect(events.some((event) => event.type === "session.long_running")).toBe(false);
   });
 
   it("backs off repeated stuck warnings while a session remains unchanged", () => {
@@ -355,7 +369,7 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.stuck")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.stuck")).toBe(false);
     const stalledEvents = events.filter((event) => event.type === "session.stalled");
     expect(stalledEvents).toHaveLength(1);
     expect(stalledEvents[0]).toMatchObject({
@@ -370,7 +384,7 @@ describe("stuck session diagnostics threshold", () => {
     expect(recoverStuckSession).not.toHaveBeenCalled();
   });
 
-  it("flags stale terminal bridge progress in stalled session diagnostics", async () => {
+  it("flags stale terminal bridge progress in stalled session diagnostics", () => {
     const events: DiagnosticEventPayload[] = [];
     const warnSpy = vi.spyOn(diagnosticLogger, "warn").mockImplementation(() => undefined);
     const unsubscribe = onDiagnosticEvent((event) => {
@@ -443,7 +457,189 @@ describe("stuck session diagnostics threshold", () => {
       ageMs: expect.any(Number),
       queueDepth: 0,
       allowActiveAbort: true,
+      stateGeneration: expect.any(Number),
     });
+  });
+
+  it("uses diagnostics.stuckSessionAbortMs for stalled active-work recovery", () => {
+    const recoverStuckSession = vi.fn();
+
+    startDiagnosticHeartbeat(
+      {
+        diagnostics: {
+          enabled: true,
+          stuckSessionWarnMs: 30_000,
+          stuckSessionAbortMs: 60_000,
+        },
+      },
+      { recoverStuckSession },
+    );
+    logSessionStateChange({ sessionId: "s1", sessionKey: "main", state: "processing" });
+    markDiagnosticEmbeddedRunStarted({ sessionId: "s1", sessionKey: "main" });
+
+    vi.advanceTimersByTime(61_000);
+
+    expect(recoverStuckSession).toHaveBeenCalledWith({
+      sessionId: "s1",
+      sessionKey: "main",
+      ageMs: expect.any(Number),
+      queueDepth: 0,
+      allowActiveAbort: true,
+      stateGeneration: expect.any(Number),
+    });
+  });
+
+  it("marks diagnostic session state idle only after a mutating recovery outcome", async () => {
+    const events: DiagnosticEventPayload[] = [];
+    const recoverStuckSession = vi.fn().mockResolvedValue({
+      status: "released",
+      action: "release_lane",
+      released: 1,
+      sessionId: "s1",
+      sessionKey: "main",
+    });
+    const unsubscribe = onDiagnosticEvent((event) => {
+      events.push(event);
+    });
+    try {
+      startDiagnosticHeartbeat(
+        {
+          diagnostics: {
+            enabled: true,
+            stuckSessionWarnMs: 30_000,
+          },
+        },
+        { recoverStuckSession },
+      );
+      logMessageQueued({ sessionId: "s1", sessionKey: "main", source: "test" });
+      logSessionStateChange({ sessionId: "s1", sessionKey: "main", state: "processing" });
+
+      vi.advanceTimersByTime(61_000);
+      await Promise.resolve();
+    } finally {
+      unsubscribe();
+    }
+
+    const state = getDiagnosticSessionState({ sessionId: "s1", sessionKey: "main" });
+    expect(state.state).toBe("idle");
+    expect(state.queueDepth).toBe(0);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "session.recovery.completed",
+        status: "released",
+        action: "release_lane",
+      }),
+    );
+  });
+
+  it("does not mark a newer processing generation idle after a late recovery outcome", async () => {
+    const events: DiagnosticEventPayload[] = [];
+    const recoverStuckSession = vi.fn().mockImplementation(async () => {
+      markDiagnosticSessionProgress({ sessionId: "s1", sessionKey: "main" });
+      return {
+        status: "released",
+        action: "release_lane",
+        released: 1,
+        sessionId: "s1",
+        sessionKey: "main",
+      };
+    });
+    const unsubscribe = onDiagnosticEvent((event) => {
+      events.push(event);
+    });
+    try {
+      startDiagnosticHeartbeat(
+        {
+          diagnostics: {
+            enabled: true,
+            stuckSessionWarnMs: 30_000,
+          },
+        },
+        { recoverStuckSession },
+      );
+      logSessionStateChange({ sessionId: "s1", sessionKey: "main", state: "processing" });
+
+      vi.advanceTimersByTime(61_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    } finally {
+      unsubscribe();
+    }
+
+    expect(getDiagnosticSessionState({ sessionId: "s1", sessionKey: "main" }).state).toBe(
+      "processing",
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "session.recovery.completed",
+        status: "released",
+        stale: true,
+      }),
+    );
+  });
+
+  it("does not start duplicate recovery for the same processing generation", async () => {
+    const events: DiagnosticEventPayload[] = [];
+    let resolveRecovery:
+      | ((outcome: {
+          status: "noop";
+          action: "none";
+          reason: "no_active_work";
+          sessionId: string;
+          sessionKey: string;
+        }) => void)
+      | undefined;
+    const recoverStuckSession = vi.fn(
+      () =>
+        new Promise<{
+          status: "noop";
+          action: "none";
+          reason: "no_active_work";
+          sessionId: string;
+          sessionKey: string;
+        }>((resolve) => {
+          resolveRecovery = resolve;
+        }),
+    );
+    const unsubscribe = onDiagnosticEvent((event) => {
+      events.push(event);
+    });
+    try {
+      startDiagnosticHeartbeat(
+        {
+          diagnostics: {
+            enabled: true,
+            stuckSessionWarnMs: 30_000,
+          },
+        },
+        { recoverStuckSession },
+      );
+      logSessionStateChange({ sessionId: "s1", sessionKey: "main", state: "processing" });
+
+      vi.advanceTimersByTime(61_000);
+      expect(recoverStuckSession).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(60_000);
+      expect(recoverStuckSession).toHaveBeenCalledTimes(1);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          type: "session.recovery.completed",
+          status: "skipped",
+          outcomeReason: "already_in_flight",
+        }),
+      );
+
+      resolveRecovery?.({
+        status: "noop",
+        action: "none",
+        reason: "no_active_work",
+        sessionId: "s1",
+        sessionKey: "main",
+      });
+      await Promise.resolve();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("reports long-running sessions separately when active work is making progress", () => {
@@ -471,8 +667,8 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.stuck")).toHaveLength(0);
-    expect(events.filter((event) => event.type === "session.stalled")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.stuck")).toBe(false);
+    expect(events.some((event) => event.type === "session.stalled")).toBe(false);
     const longRunningEvents = events.filter((event) => event.type === "session.long_running");
     expect(longRunningEvents).toHaveLength(1);
     expect(longRunningEvents[0]).toMatchObject({
@@ -505,7 +701,7 @@ describe("stuck session diagnostics threshold", () => {
       markDiagnosticEmbeddedRunStarted({ sessionId: "s1", sessionKey: "main" });
       vi.advanceTimersByTime(16_000);
 
-      expect(events.filter((event) => event.type === "session.long_running")).toHaveLength(1);
+      expect(countMatching(events, (event) => event.type === "session.long_running")).toBe(1);
 
       vi.advanceTimersByTime(28_000);
       emitDiagnosticEvent({
@@ -516,7 +712,7 @@ describe("stuck session diagnostics threshold", () => {
       });
       vi.advanceTimersByTime(2_000);
 
-      expect(events.filter((event) => event.type === "session.long_running")).toHaveLength(1);
+      expect(countMatching(events, (event) => event.type === "session.long_running")).toBe(1);
     } finally {
       unsubscribe();
     }
@@ -551,8 +747,8 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.stuck")).toHaveLength(0);
-    expect(events.filter((event) => event.type === "session.stalled")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.stuck")).toBe(false);
+    expect(events.some((event) => event.type === "session.stalled")).toBe(false);
     const longRunningEvents = events.filter((event) => event.type === "session.long_running");
     expect(longRunningEvents).toHaveLength(1);
     expect(longRunningEvents[0]).toMatchObject({
@@ -585,7 +781,7 @@ describe("stuck session diagnostics threshold", () => {
     resetDiagnosticStateForTest();
     emitDiagnosticEvent({ type: "webhook.received", channel: "telegram" });
 
-    expect(getDiagnosticStabilitySnapshot({ limit: 10 }).events).toEqual([]);
+    expect(getDiagnosticStabilitySnapshot({ limit: 10 }).events).toStrictEqual([]);
   });
 
   it("does not track session state when diagnostics are disabled", () => {
@@ -598,7 +794,7 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events).toEqual([]);
+    expect(events).toStrictEqual([]);
     expect(getDiagnosticSessionStateCountForTest()).toBe(0);
   });
 
@@ -717,7 +913,7 @@ describe("stuck session diagnostics threshold", () => {
     const warnSpy = vi.spyOn(diagnosticLogger, "warn").mockImplementation(() => undefined);
     const events: DiagnosticEventPayload[] = [];
     const unsubscribe = onDiagnosticEvent((event) => events.push(event));
-    let finishPhase!: () => void;
+    let finishPhase: (() => void) | undefined;
     const phase = withDiagnosticPhase(
       "startup.plugins.load",
       () =>
@@ -725,6 +921,10 @@ describe("stuck session diagnostics threshold", () => {
           finishPhase = resolve;
         }),
     );
+    if (!finishPhase) {
+      throw new Error("Expected diagnostic phase finish callback to be initialized");
+    }
+    const completePhase = finishPhase;
 
     try {
       startDiagnosticHeartbeat(
@@ -747,7 +947,7 @@ describe("stuck session diagnostics threshold", () => {
       logMessageQueued({ sessionId: "s1", sessionKey: "main", source: "telegram" });
       vi.advanceTimersByTime(30_000);
     } finally {
-      finishPhase();
+      completePhase();
       await phase;
       unsubscribe();
     }
@@ -848,14 +1048,14 @@ describe("stuck session diagnostics threshold", () => {
 
       vi.advanceTimersByTime(30_000);
       vi.advanceTimersByTime(90_000);
-      expect(events.filter((event) => event === "diagnostic.liveness.warning")).toHaveLength(1);
+      expect(countMatching(events, (event) => event === "diagnostic.liveness.warning")).toBe(1);
 
       vi.advanceTimersByTime(30_000);
     } finally {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event === "diagnostic.liveness.warning")).toHaveLength(2);
+    expect(countMatching(events, (event) => event === "diagnostic.liveness.warning")).toBe(2);
   });
 
   it("does not start the heartbeat when diagnostics are disabled by config", () => {
@@ -887,13 +1087,23 @@ describe("stuck session diagnostics threshold", () => {
       unsubscribe();
     }
 
-    expect(events.filter((event) => event.type === "session.stuck")).toHaveLength(0);
+    expect(events.some((event) => event.type === "session.stuck")).toBe(false);
   });
 
   it("uses default threshold for invalid values", () => {
     expect(resolveStuckSessionWarnMs({ diagnostics: { stuckSessionWarnMs: -1 } })).toBe(120_000);
     expect(resolveStuckSessionWarnMs({ diagnostics: { stuckSessionWarnMs: 0 } })).toBe(120_000);
     expect(resolveStuckSessionWarnMs()).toBe(120_000);
+    expect(
+      resolveStuckSessionAbortMs({ diagnostics: { stuckSessionAbortMs: 5_000 } }, 30_000),
+    ).toBe(30_000);
+    expect(
+      resolveStuckSessionAbortMs(
+        { diagnostics: { stuckSessionAbortMs: 48 * 60 * 60_000 } },
+        30_000,
+      ),
+    ).toBe(48 * 60 * 60_000);
+    expect(resolveStuckSessionAbortMs(undefined, 30_000)).toBe(10 * 60_000);
   });
 });
 
