@@ -56,9 +56,9 @@ describe("doctor exec safe bin helpers", () => {
     });
 
     expect(warnings).toEqual([
-      expect.stringContaining("tools.exec.safeBins includes interpreter/runtime 'node'"),
-      expect.stringContaining("agents.list.runner.tools.exec.safeBins includes 'jq'"),
-      expect.stringContaining('Run "openclaw doctor --fix"'),
+      "- tools.exec.safeBins includes interpreter/runtime 'node' without profile.",
+      "- agents.list.runner.tools.exec.safeBins includes 'jq': jq supports broad jq programs and builtins (for example `env`), so prefer explicit allowlist entries or approval-gated runs instead of safeBins.",
+      '- Run "openclaw doctor --fix" to scaffold missing custom safeBinProfiles entries.',
     ]);
   });
 
@@ -134,17 +134,20 @@ describe("doctor exec safe bin helpers", () => {
     } as OpenClawConfig);
 
     expect(hits).toHaveLength(1);
-    expect(hits[0]).toMatchObject({
-      scopePath: "tools.exec",
-      bin: "custom-safe-bin",
-      resolvedPath: binPath,
-    });
+    const hit = hits[0];
+    if (!hit) {
+      throw new Error("expected trusted-dir hint hit");
+    }
+    expect(hit.scopePath).toBe("tools.exec");
+    expect(hit.bin).toBe("custom-safe-bin");
+    expect(hit.resolvedPath).toBe(binPath);
 
-    expect(collectExecSafeBinTrustedDirHintWarnings(hits)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("tools.exec.safeBins entry 'custom-safe-bin'"),
-        expect.stringContaining("tools.exec.safeBinTrustedDirs"),
-      ]),
+    const warnings = collectExecSafeBinTrustedDirHintWarnings(hits);
+    expect(
+      warnings.some((warning) => warning.includes("tools.exec.safeBins entry 'custom-safe-bin'")),
+    ).toBe(true);
+    expect(warnings.some((warning) => warning.includes("tools.exec.safeBinTrustedDirs"))).toBe(
+      true,
     );
 
     rmSync(tempDir, { recursive: true, force: true });

@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import { SessionManager } from "@mariozechner/pi-coding-agent";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { SessionManager } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
 import { installSessionToolResultGuard } from "./session-tool-result-guard.js";
 import { castAgentMessage } from "./test-helpers/agent-message-fixtures.js";
@@ -523,7 +523,7 @@ describe("installSessionToolResultGuard", () => {
 
     const persisted = getPersistedMessages(sm);
     expect(persisted.map((message) => message.role)).toEqual(["user"]);
-    expect(persisted[0]).toMatchObject({ content: "second" });
+    expect((persisted[0] as { content?: unknown } | undefined)?.content).toBe("second");
   });
 
   // When an assistant message with toolCalls is aborted, no synthetic toolResult

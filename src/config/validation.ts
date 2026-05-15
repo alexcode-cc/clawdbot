@@ -1459,7 +1459,7 @@ function validateConfigObjectWithPluginsBase(
   const pushMissingPluginIssue = (
     path: string,
     pluginId: string,
-    opts?: { warnOnly?: boolean },
+    opts?: { warnOnly?: boolean; officialInstallHint?: boolean },
   ) => {
     if (LEGACY_REMOVED_PLUGIN_IDS.has(pluginId)) {
       warnings.push({
@@ -1479,7 +1479,7 @@ function validateConfigObjectWithPluginsBase(
       }
       return;
     }
-    if (opts?.warnOnly) {
+    if (opts?.warnOnly && opts.officialInstallHint !== false) {
       const externalInstallWarning = formatMissingOfficialExternalPluginWarning(pluginId);
       if (externalInstallWarning) {
         warnings.push({
@@ -1543,7 +1543,10 @@ function validateConfigObjectWithPluginsBase(
       continue;
     }
     if (!knownIds.has(pluginId)) {
-      pushMissingPluginIssue("plugins.deny", pluginId);
+      pushMissingPluginIssue("plugins.deny", pluginId, {
+        warnOnly: true,
+        officialInstallHint: false,
+      });
     }
   }
 

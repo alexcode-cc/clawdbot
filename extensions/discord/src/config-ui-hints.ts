@@ -207,11 +207,11 @@ export const discordChannelConfigUiHints = {
   },
   "voice.realtime.toolPolicy": {
     label: "Discord Realtime Tool Policy",
-    help: "Tool policy for the OpenClaw agent consult tool in bidi mode: safe-read-only, owner, or none.",
+    help: "Tool policy for the OpenClaw agent consult tool in realtime voice modes: safe-read-only, owner, or none. Default is owner for agent-proxy and safe-read-only for bidi.",
   },
   "voice.realtime.consultPolicy": {
     label: "Discord Realtime Consult Policy",
-    help: "Use always to strongly prefer the OpenClaw agent brain for substantive bidi turns.",
+    help: "Use always to strongly prefer the OpenClaw agent brain for substantive realtime turns. agent-proxy defaults to always.",
   },
   "voice.realtime.bargeIn": {
     label: "Discord Realtime Barge-In",
@@ -229,6 +229,10 @@ export const discordChannelConfigUiHints = {
   "voice.autoJoin": {
     label: "Discord Voice Auto-Join",
     help: "Voice channels to auto-join on startup (list of guildId/channelId entries).",
+  },
+  "voice.allowedChannels": {
+    label: "Discord Voice Allowed Channels",
+    help: "Optional voice channel residency allowlist. When set, /vc join, auto-join, and bot voice-state moves are restricted to these guildId/channelId entries. Leave unset to allow any voice channel.",
   },
   "voice.daveEncryption": {
     label: "Discord Voice DAVE Encryption",

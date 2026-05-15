@@ -539,6 +539,8 @@ const CHANNELS_AGENTS_TARGET_KEYS = [
   "agents.defaults.workspace",
   "agents.list[].tools.alsoAllow",
   "agents.list[].tools.byProvider",
+  "agents.list[].tools.message.crossContext.allowAcrossProviders",
+  "agents.list[].tools.message.crossContext.allowWithinProvider",
   "agents.list[].tools.profile",
   "channels.mattermost",
 ] as const;
@@ -568,6 +570,8 @@ const FINAL_BACKLOG_TARGET_KEYS = [
   "diagnostics.otel.traces",
   "gateway.remote.password",
   "gateway.remote.token",
+  "skills.load.allowSymlinkTargets",
+  "skills.load.extraDirs",
   "skills.load.watch",
   "skills.load.watchDebounceMs",
   "ui.assistant.avatar",

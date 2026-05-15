@@ -178,10 +178,8 @@ describe("resolveSessionResetPolicy", () => {
       resetType: "direct",
     });
 
-    expect(policy).toMatchObject({
-      mode: "daily",
-      atHour: 4,
-    });
+    expect(policy.mode).toBe("daily");
+    expect(policy.atHour).toBe(4);
   });
 
   it("treats idleMinutes=0 as never expiring by inactivity", () => {
@@ -230,10 +228,8 @@ describe("resolveSessionResetPolicy", () => {
       },
     });
 
-    expect(freshness).toMatchObject({
-      fresh: false,
-      idleExpiresAt: 5 * 60_000,
-    });
+    expect(freshness.fresh).toBe(false);
+    expect(freshness.idleExpiresAt).toBe(5 * 60_000);
   });
 
   it("falls back to sessionStartedAt, not updatedAt, for legacy idle freshness", () => {
@@ -249,10 +245,8 @@ describe("resolveSessionResetPolicy", () => {
       },
     });
 
-    expect(freshness).toMatchObject({
-      fresh: false,
-      idleExpiresAt: 5 * 60_000,
-    });
+    expect(freshness.fresh).toBe(false);
+    expect(freshness.idleExpiresAt).toBe(5 * 60_000);
   });
 
   it("does not let future legacy updatedAt values keep daily sessions fresh", () => {
@@ -281,10 +275,8 @@ describe("resolveSessionResetPolicy", () => {
       },
     });
 
-    expect(freshness).toMatchObject({
-      fresh: false,
-      idleExpiresAt: 5 * 60_000,
-    });
+    expect(freshness.fresh).toBe(false);
+    expect(freshness.idleExpiresAt).toBe(5 * 60_000);
   });
 });
 
@@ -406,11 +398,11 @@ describe("session store writer queue", () => {
     );
 
     expect(writeSpy).toHaveBeenCalledTimes(1);
-    expect(writeSpy).toHaveBeenCalledWith(
-      storePath,
-      expect.any(String),
-      expect.objectContaining({ durable: false, mode: 0o600 }),
-    );
+    const [writtenPath, writtenText, writeOptions] = writeSpy.mock.calls[0] ?? [];
+    expect(writtenPath).toBe(storePath);
+    expect(writtenText).toBeTypeOf("string");
+    expect(writeOptions?.durable).toBe(false);
+    expect(writeOptions?.mode).toBe(0o600);
     writeSpy.mockRestore();
   });
 
