@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.10-beta.6` | Node.js `>=22.16.0`
+> 版本：`2026.5.12` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.10-beta.6 或更新版本
+# 應顯示 2026.5.12 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,13 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.10）
+## CLI 改善（2026.4.22–2026.5.12）
+
+### 2026.5.12（精選，對齊 `CHANGELOG`）
+
+- **Plugin help path**：裸 `openclaw plugins <subcommand>` 與 parent-command help 會維持輕量路徑，不先做昂貴的 registry discovery。
+- **Onboard passthrough**：provider-specific auth flags（例如 `--openai-api-key`）會正確透傳到 onboarding wizard 的 auth method，不再卡在互動式重複提問。
+- **CLI / doctor 對齊**：`message` 工具與 runtime grant 的錯誤提示更貼近實際執行面，避免 doctor 與 update 對同一權限給出不同答案。
 
 ### 2026.5.10（精選，對齊 `CHANGELOG`）
 
@@ -2081,4 +2087,4 @@ openclaw setup
 - **`openclaw plugins`**：managed plugin install／rollback／repair／uninstall 使用 absolute POSIX npm lifecycle shell；source cleanup 與 external setup runtime repair 更穩。
 - **`openclaw infer model run`**：Codex probe 錯誤細節更可見；HEIC model-run 檔案會正規化處理。
 
-*本文件基於 OpenClaw `2026.5.10-beta.6` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+*本文件基於 OpenClaw `2026.5.12` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

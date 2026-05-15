@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.10-beta.6` | Node.js `>=22.16.0`
+> 版本：`2026.5.12` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.10-beta.6 或更新版本
+# 應顯示 2026.5.12 或更新版本
 ```
 
 ---
@@ -1471,7 +1471,13 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.10）
+## 安裝與設定改善（2026.4.22–2026.5.12）
+
+### 2026.5.12（精選，對齊 `CHANGELOG`）
+
+- **Auth passthrough**：provider-specific auth flags（例如 `--openai-api-key`）會透傳到 onboarding wizard 的 auth method，避免非互動環境被重複追問。
+- **Provider discovery**：`setup.providers[].envVars` 會進入 provider discovery，讓安裝精靈能跟實際 credentials 來源對齊。
+- **Config / help**：wizard 與 CLI help 的敘事更集中於「按需安裝」，而不是預設把所有 runtime cone 一起拉進來。
 
 ### 2026.5.10（精選，對齊 `CHANGELOG`）
 
@@ -1574,4 +1580,4 @@ openclaw doctor --fix
 
 ---
 
-*本文件基於 OpenClaw `2026.5.10-beta.6` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.12` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*

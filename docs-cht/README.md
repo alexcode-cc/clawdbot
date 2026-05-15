@@ -66,10 +66,11 @@
 - [2026-05-07 提交分析](./commit-analyze-20260507.md) - **`CHANGELOG` → ## 2026.5.6 / ## 2026.5.7** 修復摘要（對齊 **`v2026.5.7`**／套件 **`2026.5.7`**；自 **`v2026.5.5`** 起 93 筆提交）
 - [2026-05-09 提交分析](./commit-analyze-20260509.md) - **`CHANGELOG` → ## 2026.5.9** 主題深讀（對齊 **`2026.5.9-beta.1`**／自 stable **`v2026.5.7`（`eeef486449`）** 之後至 **`HEAD`** 的累積變更；含 **Breaking：iMessage／BlueBubbles** 與 **Talk／channel-message／fs-safe** 架構總結）
 - [2026-05-10 提交分析](./commit-analyze-20260510.md) - **`v2026.5.10-beta.6`** 線與繁中同步分析（**Telegram reply context**、**Discord realtime voice**、**ClickClack**、**subagent delegation**、**skills symlink trust**）
+- [2026-05-12 提交分析](./commit-analyze-20260512.md) - **`v2026.5.12`** 線與繁中同步分析（**Bedrock／Slack／OpenShell／Anthropic Vertex 外部化**、**Control UI/WebChat auto-scroll**、**ACP fallbacks**、**Telegram worker/spool**、**subagent model precedence**）
 
 ## 版本
 
-目前版本：`2026.5.10-beta.6`
+目前版本：`2026.5.12`
 
 ## 快速開始
 

@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請先讀 **`## Gateway 改善（2026.5.10）`**（**`## 2026.5.10`**）；回溯 **2026.5.6–2026.5.7** 仍見下方 **Gateway 改善（2026.5.6–2026.5.7）**；**2026.5.5** 見 **Gateway 改善（2026.5.5）**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.10-beta.6`**（README／頁尾／對齊 `package.json`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請先讀 **`## Gateway 改善（2026.5.12）`**（**`## 2026.5.12`**）；回溯 **2026.5.10** 仍見下方 **Gateway 改善（2026.5.10）**，再往前可讀 **2026.5.6–2026.5.7** 與 **2026.5.5**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.12`**（README／頁尾／對齊 `package.json`）為準。
 
 ### 設定與啟動效能
 
@@ -899,6 +899,21 @@ Control UI dashboard 經過全面翻新，新增：
 ### Streaming／跨通道語意（與 Gateway 相交）
 
 - **Discord streaming**：對外回覆預設走 **progress draft**，除非 **`channels.discord.streaming.mode`** 設為 **`off`**（見 changelog）。
+
+## Gateway 改善（2026.5.12）
+
+> 對齊 **`CHANGELOG.md`** 與 **`docs-cht/commit-analyze-20260512.md`**；這一輪主要是 **ACP fallback / transcript sequence / stale SSE refresh** 類穩定化，並把 session history 的一致性補齊。
+
+### ACP／fallback
+
+- **`acp.fallbacks`**：ACP turn 可在主 backend 不可用時先試備援 runtime backend，且只在真正輸出前切換。
+- **可觀測性**：備援切換保留 turn 邊界，避免把 fallback 做成黑箱重試。
+
+### Session history／transcript
+
+- **monotonic transcript sequence**：live update 會保留單調遞增的 transcript message sequence，避免增量 state 被亂序資料污染。
+- **stale SSE refresh**：當 SSE 歷史輸入過舊時，Gateway 會先刷新再 append，不把壞的 incremental state 接進來。
+- **history consistency**：session mirror、live update、replay 與歷史查詢之間的差異收斂，降低回合診斷失真。
 
 ## Gateway 改善（2026.5.10）
 

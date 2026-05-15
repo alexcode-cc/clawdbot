@@ -187,7 +187,7 @@ interface RpcEvent {
   success: true,
   result: {
     status: 'healthy',
-    version: '2026.5.10-beta.6',
+    version: '2026.5.12',
     uptime: 3600,
     memory: { used: 128000000, total: 512000000 }
   }

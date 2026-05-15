@@ -1382,7 +1382,14 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.10）
+## Agent 改善（2026.4.22–2026.5.12）
+
+### 2026.5.12（精選，對齊 `CHANGELOG`）
+
+- **Subagent model precedence**：`agents.defaults.subagents.model` 在 `sessions_spawn` 會先於 target agent primary model 套用，讓像 `claude-cli` 這類 runtime 真的跟著預設子回合走。
+- **message tool runtime grant**：doctor / Codex 不再把 runtime 已授權的 `message` 工具誤報為不可用，維持 update 與 doctor 的一致性。
+- **Current-turn consistency**：source-reply 與 session mirror 的交付語意更一致，避免只靠 message tool 的回覆被誤判成空 turn。
+- **Trust boundary**：子回合與 target runtime 的邊界更清楚，尤其是預設子回合不該被後來的 primary model 決策覆寫。
 
 ### 2026.5.10（精選，對齊 `CHANGELOG`）
 
