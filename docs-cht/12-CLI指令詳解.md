@@ -1,6 +1,6 @@
 # CLI 指令詳解
 
-> 版本：`2026.5.7` | Node.js `>=22.16.0`
+> 版本：`2026.5.9-beta.1` | Node.js `>=22.16.0`
 >
 > 本文件涵蓋 OpenClaw CLI 的所有指令、選項和實際操作情境範例，幫助使用者從零開始安裝、設定和操作 OpenClaw 平台。
 
@@ -51,7 +51,7 @@ docker pull openclaw/openclaw
 
 ```bash
 openclaw --version
-# 應顯示 2026.5.7 或更新版本
+# 應顯示 2026.5.9-beta.1 或更新版本
 ```
 
 ### 快速啟動流程
@@ -1970,7 +1970,19 @@ openclaw setup
 - `openclaw agent --deliver` payloads 在發送前執行 reply-media path normalizer
 - `MEDIA:./out/photo.png` 等相對路徑正確解析至 agent workspace
 
-## CLI 改善（2026.4.22–2026.5.7）
+## CLI 改善（2026.4.22–2026.5.9）
+
+### 2026.5.9（精選，對齊 `CHANGELOG`)
+
+- **Chat 指令**：**`/think default`**、**`/fast default`** 清除 session override，回到設定／provider 預設（#79385）。
+- **Infer**：**`openclaw infer model run`** 支援 **thinking override**；thinking 走 **simple completions** 路由修正。
+- **Cron**：**`openclaw cron list --agent <id>`** 正規化 agent id；無 stored agent id 的 job 在篩選時歸入 **default agent**。
+- **Gateway**：**`openclaw gateway restart --safe --skip-deferral`** 對應 RPC **`skipDeferral`**。
+- **Path 插件（bundled `oc-path`）**：**`openclaw path`** 提供 **`oc://`** 精準讀取 workspace markdown／JSONC／JSONL。
+- **CLI 錯誤訊息**：parser、startup、config、guardrail、channel、agent、task、session、MCP 失敗附 **可恢復的下一步指令** 提示。
+- **Root 安裝**：預設 **拒絕 root 執行會改變狀態的 CLI**；**`OPENCLAW_ALLOW_ROOT=1`** 為明確逃生口。
+
+## CLI 改善（2026.4.22–2026.5.7）（歷史滾動）
 
 ### 聊天內建模型註冊（2026.4.22）
 
@@ -2063,4 +2075,4 @@ openclaw setup
 - **`openclaw plugins`**：managed plugin install／rollback／repair／uninstall 使用 absolute POSIX npm lifecycle shell；source cleanup 與 external setup runtime repair 更穩。
 - **`openclaw infer model run`**：Codex probe 錯誤細節更可見；HEIC model-run 檔案會正規化處理。
 
-*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*
+*本文件基於 OpenClaw `2026.5.9-beta.1` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/cli*

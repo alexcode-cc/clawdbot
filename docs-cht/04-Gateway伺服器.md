@@ -747,7 +747,7 @@ Control UI dashboard 經過全面翻新，新增：
 
 ## Gateway 改善（2026.4.27）
 
-> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請讀 **`## Gateway 改善（2026.5.6–2026.5.7）`**（**`## 2026.5.6`**／**`## 2026.5.7`**）；**`## Gateway 改善（2026.5.5）`** 對 **`## 2026.5.5`**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.7`**（README／頁尾／API `version`）為準。
+> 對齊 **`CHANGELOG.md`**：**最新繁體滾動**請先讀 **`## Gateway 改善（2026.5.9）`**（**`## 2026.5.9`**）；回溯 **2026.5.6–2026.5.7** 仍見下方 **Gateway 改善（2026.5.6–2026.5.7）**；**2026.5.5** 見 **Gateway 改善（2026.5.5）**。本節 **`（2026.4.27）`** 保留為 **Unreleased** 時期條目標記——**繁體文件全域版本**以 **`2026.5.9-beta.1`**（README／頁尾／對齊 `package.json`）為準。
 
 ### 設定與啟動效能
 
@@ -876,6 +876,29 @@ Control UI dashboard 經過全面翻新，新增：
 - **Event-loop degraded 判定**：快速重複 health/status sample 不再只因單次 CPU/utilization 標記 degraded，需累積 sustained sampling window。
 - **Gateway status uptime**：`/status` 顯示 compact Gateway process uptime 與 host system uptime，方便從聊天端判斷重啟與主機存活時間。
 - **Token shadowing**：`doctor` 會提醒 `OPENCLAW_GATEWAY_TOKEN` 可能遮蔽不同 active `gateway.auth.token` source，但同一 env token 不誤報。
+
+---
+
+## Gateway 改善（2026.5.9）
+
+> 對齊 **`CHANGELOG.md` → `## 2026.5.9`**；架構級總覽見 **`docs-cht/commit-analyze-20260509.md`**。
+
+### Talk／sessions／tasks／restart
+
+- **Talk session controller**：統一 realtime relay、transcription、managed-room、Voice Call、Meet、原生客戶端；新增 **`talk.session.*` Gateway RPC**，並對 OTLP／Prometheus／檔案日誌匯出有界 lifecycle／audio metrics（且不記錄轉寫全文、payload、敏感 id）。
+- **Session-store writer**：索引寫入維持 **原子性**，並在 writer lock 內 **略過 durable fsync**，降低 cron／channel turn 在慢檔案系統上的捱餓風險。
+- **`tasks.list`／`tasks.get`／`tasks.cancel`**：ledger RPC **文件化／穩定化**（含生成的 Swift typing）；並持續修復 stale CLI run-context reconciliation 與 **有界 channel hot-reload deferral**。
+- **`gateway.restart.request`**：**`skipDeferral`** 對應 **`openclaw gateway restart --safe --skip-deferral`**（安全重啟被釘選 task defer 卡住時）。
+- **macOS LaunchAgent**：多篇 changelog fixes（SIGUSR1 狀態清理、關機節流、Apple Silicon Homebrew PATH、**`bootout` 預設停止**、`--disable` persist、App Nap **`ProcessType=Interactive`** 等）。
+
+### Gateway 效能／診斷
+
+- **`pnpm gateway:watch`**：**startup phase spans**、active work labels、**sync-I/O tracing**（`OPENCLAW_TRACE_SYNC_IO`）補強可觀測性。
+- **Metadata snapshot**：dashboard／channel／auth 熱路徑 **重用 plugin metadata snapshot**，削減重複扫描；並在多處以 **bounded scan** 取代全排序。
+
+### Streaming／跨通道語意（與 Gateway 相交）
+
+- **Discord streaming**：對外回覆預設走 **progress draft**，除非 **`channels.discord.streaming.mode`** 設為 **`off`**（見 changelog）。
 
 ---
 

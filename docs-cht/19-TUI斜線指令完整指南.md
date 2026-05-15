@@ -1,6 +1,6 @@
 # OpenClaw TUI 斜線指令完整指南
 
-> 版本：`2026.5.7` | Node.js `>=22.16.0`
+> 版本：`2026.5.9-beta.1` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw tui` 終端管理介面中所有斜線指令（Slash Commands）的用途、語法、參數和注意事項。
 
@@ -1163,7 +1163,14 @@ Context compaction 期間可選收到通知（#67830）：
 
 ---
 
-## TUI 指令改善（2026.4.22–2026.5.7）
+## TUI 指令改善（2026.4.22–2026.5.9）
+
+### 2026.5.9（精選）
+
+- **`/think default`**、**`/fast default`**：清除 session override（與 chat 指令一致，#79385）。
+- **Control UI／native chat**：thinking 繼承預設與明確 override **分開標示**；compact **context usage** 指示器（#46398 等）。
+
+## TUI 指令改善（2026.4.22–2026.5.7）（歷史滾動）
 
 ### 無 Gateway 內嵌模式（2026.4.22）
 
@@ -1240,4 +1247,4 @@ Context compaction 期間可選收到通知（#67830）：
 - **Native command owner enforcement**：native command handlers 遵守 owner enforcement，TUI／通道原生命令權限語意更一致。
 - **Cron／Tasks 狀態**：CLI JSON status 與 stale task reconciliation 改善背景任務狀態，TUI 操作與外部工具較不需自行推導。
 
-*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*
+*本文件基於 OpenClaw `2026.5.9-beta.1` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai/tools/slash-commands*

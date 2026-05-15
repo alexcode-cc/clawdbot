@@ -1382,7 +1382,17 @@ Provider 系統經歷大規模重構：
 - **Reasoning Effort 修復**：`/think off` 時省略 disabled reasoning payloads，不再發送不支持的 `reasoning.effort: "none"`
 - **GPT-5 Prompt Contract**：使用 tagged GPT-5 prompt contract，改善 GPT-5 系列的 prompt overlay
 
-## Agent 改善（2026.4.22–2026.5.7）
+## Agent 改善（2026.4.22–2026.5.9）
+
+### 2026.5.9（精選，對齊 `CHANGELOG`）
+
+- **Prepared runtime foundation**：changelog 載明新增 **準備好的 runtime contracts**，用於在後續 reply-path 遷移中貫穿 carrier **provider／model／tool／TTS／outbound** 等「已決策事實」。
+- **System prompt**：執行時把 **目前 provider／model identity** 注入 system prompt（含 configured prompt overrides 與 CLI hook 替換），讓 `/model`／自我辨識回答與真正 runtime selection 一致。
+- **Compaction／context**：manual `/compact` 在提供商回傳 empty／no-op summary 時 **保留近期 tail**，避免空白 checkpoint 覆蓋有效上下文；context-engine loop-hook checkpoint 與 after-turn finalizer **共享**，降低訊息重播。
+- **Failover**：`stream_read_error` 等視為 **瞬態逾時** 以允許備援、`assistant-prefill` 類 **確定性格式錯誤** **不再跨 profile retry**（見 Fixes）；rate-limit **`stream_read_error`** transient classification 等条目亦入此版本。
+- **Subagents**：`sessions_spawn(model:"default")` 視為 **預設模型 fallback**；**忽略 ACP-only `streamTo`** 於原生 sub-agent spawn。
+- **CLI runner**：**resume JSONL** 與 **supervisor 輸出有界**；並調整 prepared CLI runs 的監控輸出策略以避免長輸出占滿記憶體。
+- **Codex／PI**：多條 app-server、harness、**PI Codex Responses WebSocket-capable native transport**、cooldown／profile health 分界等——以英文 changelog Fixes／Changes 清單為準。
 
 ### 2026.4.22（精選）
 

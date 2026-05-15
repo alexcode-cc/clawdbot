@@ -1,6 +1,6 @@
 # OpenClaw Onboard 安裝設定詳解
 
-> 版本：`2026.5.7` | Node.js `>=22.16.0`
+> 版本：`2026.5.9-beta.1` | Node.js `>=22.16.0`
 >
 > 本文件完整說明 `openclaw onboard` 安裝精靈的所有步驟、Skills 系統、Hooks 系統，以及 Boot.md / Bootstrap 機制的詳細細節與設定方式。
 
@@ -74,7 +74,7 @@ pnpm approve-builds -g
 
 # 驗證安裝
 openclaw --version
-# 應顯示 2026.5.7 或更新版本
+# 應顯示 2026.5.9-beta.1 或更新版本
 ```
 
 ---
@@ -415,7 +415,7 @@ Skills（技能）是擴展 Agent 能力的模組化工具。每個 Skill 提供
 | **imsg** | 📨 | iMessage/SMS CLI（macOS Messages.app） | `imsg`（macOS） | `brew install imsg` |
 | **slack** | 💬 | Slack 操作（reactions、pins、messages） | Slack 頻道已設定 | 設定 `channels.slack` |
 | **discord** | 🎮 | Discord 操作 | Discord 頻道已設定 | 設定 `channels.discord.token` |
-| **bluebubbles** | 🫧 | iMessage via BlueBubbles | BlueBubbles 已設定 | 設定 `channels.bluebubbles` |
+| **imessage** | 📨 | iMessage via `imsg`（Mac 或遠端 wrapper） | `imsg` 可用 | 設定 `channels.imessage`（**BlueBubbles 已自核心移除**，見 2026.5.9 Breaking） |
 | **wacli** | 📱 | WhatsApp 訊息和歷史同步 | `wacli` | `brew install wacli` |
 | **xurl** | 🐦 | X (Twitter) API（貼文、回覆、搜尋、DM） | `xurl` | `brew install xurl` 或 `npm` |
 
@@ -1471,7 +1471,19 @@ openclaw doctor --fix
 
 ---
 
-## 安裝與設定改善（2026.4.22–2026.5.7）
+## 安裝與設定改善（2026.4.22–2026.5.9）
+
+### 2026.5.9（精選，對齊 `CHANGELOG`)
+
+- **Node**：支援底線 **Node 22.16+**（建議 Node 24）。
+- **Docker**：runtime 映像以 **`tini`** 為 PID 1。
+- **Windows**：`openclaw update` 子行程 **`stdio: pipe`**；登入 shell env 探測 **隱藏子視窗**；插件 skill 目錄以 **junction** 發布（避免 symlink EPERM）。
+- **OpenAI onboarding**：可 **npm 安裝 Codex runtime plugin** 並為 implicit OpenAI routes **自動載入**。
+- **外部通道**：官方 catalog 顯示 **未安裝的已設定通道** 與 **精確 install／doctor 修復指令**（Feishu／WhatsApp 等 raw upgrade 後遺失插件）。
+- **Matrix**：改 **外部官方插件** 安裝，不再假設 core 內建。
+- **iMessage**：onboard／wizard 敘事改 **`channels.imessage`**；**不再**引導 BlueBubbles bundled 路徑。
+
+## 安裝與設定改善（2026.4.22–2026.5.7）（歷史滾動）
 
 ### 自動安裝缺失插件（2026.4.22）
 
@@ -1556,4 +1568,4 @@ openclaw doctor --fix
 
 ---
 
-*本文件基於 OpenClaw `2026.5.7` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
+*本文件基於 OpenClaw `2026.5.9-beta.1` 版本撰寫。完整英文文件請參考 https://docs.openclaw.ai*
